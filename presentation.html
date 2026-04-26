@@ -123,6 +123,9 @@
     .slide.exit-left {
       opacity: 0; transform: translateX(-40px);
     }
+    .slide.exit-right {
+      opacity: 0; transform: translateX(40px);
+    }
 
     /* ── Slide labels ── */
     .slide-label {
@@ -1075,13 +1078,29 @@
   function go(dir) {
     const next = current + dir;
     if (next < 1 || next > TOTAL) return;
-    const prev = document.getElementById('s' + current);
-    prev.classList.remove('active');
-    prev.classList.add(dir > 0 ? 'exit-left' : '');
-    setTimeout(() => prev.classList.remove('exit-left'), 420);
+
+    const prevEl = document.getElementById('s' + current);
+    const nextEl = document.getElementById('s' + next);
+
+    // Position next slide off-screen on the correct side before animating in
+    nextEl.style.transition = 'none';
+    nextEl.style.transform = dir > 0 ? 'translateX(40px)' : 'translateX(-40px)';
+    nextEl.style.opacity = '0';
+    nextEl.classList.add('active');
+
+    // Force reflow so the initial position is applied before transition starts
+    nextEl.getBoundingClientRect();
+    nextEl.style.transition = '';
+    nextEl.style.transform = '';
+    nextEl.style.opacity = '';
+
+    // Exit current slide to correct side
+    prevEl.classList.add(dir > 0 ? 'exit-left' : 'exit-right');
+    setTimeout(() => {
+      prevEl.classList.remove('active', 'exit-left', 'exit-right');
+    }, 420);
+
     current = next;
-    const el = document.getElementById('s' + current);
-    el.classList.add('active');
     updateUI();
   }
 
