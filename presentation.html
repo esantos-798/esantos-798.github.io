@@ -533,7 +533,7 @@
       Performance in<br>
       <em>Optical Transport Networks</em>
     </h1>
-    <p class="cover-sub">Using LSTM-Based Deep Learning Models — Rayhan Aziz Budiana et al.<br>Apresentação com fundamentos em ITU-T G.709 e G.798</p>
+    <p class="cover-sub">Using LSTM-Based Deep Learning Models — Rayhan Aziz Budiana et al.<br>Apresentação com fundamentos em ITU-T G.709</p>
     <div class="cover-meta">
       <div class="meta-item"><strong>Conferência</strong>ICWT 2025 · IEEE</div>
       <div class="meta-item"><strong>Tema</strong>IA + Redes OTN</div>
@@ -558,7 +558,7 @@
       <div class="roteiro-item">
         <div class="roteiro-num">02</div>
         <div class="roteiro-title">Contexto OTN</div>
-        <div class="roteiro-desc">Defeitos por camada (G.798), contadores PM e hierarquia causal.</div>
+        <div class="roteiro-desc">Defeitos por camada (G.798), contadores de desempenho e hierarquia causal.</div>
         <div class="roteiro-time">3 min</div>
       </div>
       <div class="roteiro-item">
@@ -602,7 +602,7 @@
         <div class="card">
           <div class="card-accent"></div>
           <div class="card-label">A oportunidade</div>
-          <div class="card-body">IA pode detectar <strong>degradação progressiva</strong> antes que o defeito dispare — a G.798 define contadores PM exatamente para isso: BIP-8, ES, SES, BBE e UAS nas janelas de 15min e 24h.</div>
+          <div class="card-body">IA pode detectar <strong>degradação progressiva</strong> antes que o defeito dispare — equipamentos OTN registram contadores de desempenho contínuos que sinalizam deterioração muito antes de qualquer alarme ser gerado.</div>
         </div>
         <div class="card">
           <div class="card-accent orange"></div>
@@ -653,7 +653,7 @@
 
   <!-- ══ S5: CONTADORES PM ══ -->
   <div class="slide" id="s5">
-    <div class="slide-label">// 02 — contadores PM · G.798 §9</div>
+    <div class="slide-label">// 02 — contadores de desempenho · G.7710</div>
     <div class="slide-header" style="margin-bottom:16px">
       <h2 class="slide-title">A degradação<br><em>antes do defeito.</em></h2>
     </div>
@@ -664,8 +664,8 @@
           <div class="tl-line"></div>
           <div class="tl-item">
             <div class="tl-bar-wrap"><div class="tl-bar" style="height:30px;border-color:#3a7bd5;background:rgba(58,123,213,0.15)"></div></div>
-            <div class="tl-label-top" style="color:#3a7bd5">BIP-8↑</div>
-            <div class="tl-desc">erros de bit crescendo</div>
+            <div class="tl-label-top" style="color:#3a7bd5">BBE↑</div>
+            <div class="tl-desc">erros de bloco crescendo</div>
             <div class="tl-time">t − 30min</div>
           </div>
           <div class="tl-item">
@@ -693,17 +693,16 @@
           <thead>
             <tr>
               <th>Contador</th>
-              <th>Definição G.798</th>
+              <th>Definição G.7710</th>
               <th>Janelas</th>
               <th>Camadas</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>BIP-8 / BEI</td><td>Erros de bit por frame OTN</td><td>Contínuo + 15min + 24h</td><td>OTU / ODU / TCMi</td></tr>
+            <tr><td>BBE</td><td>Background Block Errors</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
             <tr><td>ES</td><td>Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
             <tr><td>SES</td><td>Severely Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
             <tr><td>UAS</td><td>Unavailable Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td>BBE</td><td>Background Block Errors</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
           </tbody>
         </table>
         <div style="margin-top:14px;font-size:11px;color:var(--muted);border:1px solid var(--border);padding:12px 16px">
@@ -1003,8 +1002,8 @@
       <div class="attention-item">
         <div class="attention-letter">C</div>
         <div class="attention-body">
-          <div class="attention-title">Contadores PM como features preditivas (G.798 §9)</div>
-          <div class="attention-desc">BIP-8, ES, SES, BBE e UAS registram degradação progressiva nas janelas de 15min e 24h — antes que qualquer defeito dispare. Incluir esses contadores poderia transformar o modelo de reativo em verdadeiramente preditivo.</div>
+          <div class="attention-title">Contadores de desempenho como features preditivas (G.7710)</div>
+          <div class="attention-desc">BBE, ES, SES e UAS registram degradação progressiva nas janelas de 15min e 24h — antes que qualquer defeito dispare. Incluir esses contadores poderia transformar o modelo de reativo em verdadeiramente preditivo.</div>
           <div class="attention-ref">→ Dado disponível em todo NE OTN compatível com G.709</div>
         </div>
       </div>
@@ -1032,7 +1031,7 @@
       </div>
       <div class="conclusion-item">
         <div class="conclusion-icon orange">→</div>
-        <div class="conclusion-text">Trabalhos futuros podem incorporar a <strong>hierarquia causal de defeitos da G.798</strong> e os contadores PM como features — tornando o modelo OTN-aware de verdade.</div>
+        <div class="conclusion-text">Trabalhos futuros podem incorporar a <strong>hierarquia causal de defeitos da G.798</strong> e os contadores de desempenho (G.7710) como features — tornando o modelo OTN-aware de verdade.</div>
       </div>
       <div class="conclusion-item">
         <div class="conclusion-icon muted">→</div>
@@ -1040,7 +1039,7 @@
       </div>
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:10px;color:var(--muted);letter-spacing:0.08em">ITU-T G.709 · G.798 · IEEE ICWT 2025 · Rayhan Aziz Budiana et al.</span>
+      <span style="font-size:10px;color:var(--muted);letter-spacing:0.08em">ITU-T G.709 · G.7710 · G.798 · IEEE ICWT 2025 · Rayhan Aziz Budiana et al.</span>
       <a href="https://esantos-798.github.io" style="font-size:11px;color:var(--accent);text-decoration:none;letter-spacing:0.08em">esantos-798.github.io ↗</a>
     </div>
   </div>
@@ -1082,19 +1081,16 @@
     const prevEl = document.getElementById('s' + current);
     const nextEl = document.getElementById('s' + next);
 
-    // Position next slide off-screen on the correct side before animating in
     nextEl.style.transition = 'none';
     nextEl.style.transform = dir > 0 ? 'translateX(40px)' : 'translateX(-40px)';
     nextEl.style.opacity = '0';
     nextEl.classList.add('active');
 
-    // Force reflow so the initial position is applied before transition starts
     nextEl.getBoundingClientRect();
     nextEl.style.transition = '';
     nextEl.style.transform = '';
     nextEl.style.opacity = '';
 
-    // Exit current slide to correct side
     prevEl.classList.add(dir > 0 ? 'exit-left' : 'exit-right');
     setTimeout(() => {
       prevEl.classList.remove('active', 'exit-left', 'exit-right');
