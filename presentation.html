@@ -1,15 +1,14 @@
 
-Nenhum selecionado
 
 Pular para o conteúdo
 Como usar o Gmail com leitores de tela
-4 de 8.264
-Apresentação
+1 de 8.265
+Apresentação 5
 Caixa de entrada
 
 Eduardo R Santos
 Anexos
-19:45 (há 10 minutos)
+20:23 (há 3 minutos)
 para Eduardo, mim
 
 FYI
@@ -568,7 +567,7 @@ FYI
       <div class="roteiro-item">
         <div class="roteiro-num">02</div>
         <div class="roteiro-title">Contexto OTN</div>
-        <div class="roteiro-desc">Defeitos por camada (G.798), contadores PM e hierarquia causal.</div>
+        <div class="roteiro-desc">Defeitos por camada, hierarquia causal de propagação (G.798) e distinção defeito vs alarme.</div>
         <div class="roteiro-time">3 min</div>
       </div>
       <div class="roteiro-item">
@@ -600,16 +599,29 @@ FYI
     </div>
     <div class="grid-2" style="align-items:start">
       <div>
-        <div class="big-num" style="margin-bottom:4px;font-size:clamp(36px,6vw,80px)">n × k</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-family:var(--mono)">n = clientes ODU &nbsp;·&nbsp; k = níveis TCM</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">defeitos em &lt; 200ms a partir de <strong style="color:var(--text)">um único dLOS</strong> — cresce com o número de clientes ODU</div>
-        <div style="border:1px solid var(--border);padding:10px 14px;font-size:10.5px;color:var(--muted);font-family:var(--mono);line-height:2">
-          1× dLOS + 1× dLOF + 1× OTU-AIS + 1× OTU-BDI<br>
-          + (1+n)× ODU-AIS + (1+n)× ODU-BDI<br>
-          + (1+n)×6× TCMi-AIS + (1+n)×6× TCMi-BDI<br>
-          + n× Client-AIS
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:0.08em;text-transform:uppercase">Cascata a partir de um único dLOS</div>
+
+        <div style="border:1px solid var(--border);padding:12px 16px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2.1;margin-bottom:6px">
+          <div style="color:var(--accent2);font-size:10px;margin-bottom:4px">— fixo (independe de N) —</div>
+          1× dLOS &nbsp;+&nbsp; 1× dLOF &nbsp;+&nbsp; 1× OTU-AIS &nbsp;+&nbsp; 1× OTU-BDI
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">Ex: n=1 → <strong style="color:var(--text)">33 defeitos</strong> simultâneos</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="border:1px solid var(--border);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2">
+            <div style="color:var(--accent2);font-size:10px;margin-bottom:4px">N = 1 &nbsp;(sem agregador)</div>
+            1× ODU-AIS + 1× ODU-BDI<br>
+            1×6× TCMi-AIS + 1×6× TCMi-BDI<br>
+            1× Client-AIS<br>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Total: <strong style="color:var(--text)">19 defeitos</strong></div>
+          </div>
+          <div style="border:1px solid var(--accent);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2">
+            <div style="color:var(--accent);font-size:10px;margin-bottom:4px">N ≥ 2 &nbsp;(+ agregador ODU)</div>
+            (N+1)× ODU-AIS + (N+1)× ODU-BDI<br>
+            (N+1)×6× TCMi-AIS + (N+1)×6× TCMi-BDI<br>
+            N× Client-AIS<br>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">N=2 → <strong style="color:var(--text)">48</strong> &nbsp;·&nbsp; N=4 → <strong style="color:var(--text)">78 defeitos</strong></div>
+          </div>
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
         <div class="card">
@@ -1159,5 +1171,5 @@ FYI
 </script>
 </body>
 </html>
-presentation_v3_4.html
-Exibindo presentation_v3_4.html.
+presentation_v5.html
+Exibindo presentation_v5.html.
