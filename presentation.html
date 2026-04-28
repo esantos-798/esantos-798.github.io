@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OTN + LSTM — Apresentação · ERS</title>
+  <title>OTN + LSTM — Apresentação · ERS [A]</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -13,11 +13,12 @@
       --bg:      #0a0a0a;
       --surface: #111111;
       --border:  #1e1e1e;
-      --text:    #e8e8e2;
-      --muted:   #555;
+      --text:    #f0f0ec;
+      --muted:   #777;
       --accent:  #c8ff00;
       --accent2: #ff6b35;
       --mono:    'DM Mono', monospace;
+      --body:    'Inter', sans-serif;
       --sans:    'Syne', sans-serif;
     }
 
@@ -26,8 +27,8 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--mono);
-      font-size: 14px;
+      font-family: var(--body);
+      font-size: 16px;
       line-height: 1.7;
     }
 
@@ -86,7 +87,7 @@
       background: none; border: 1px solid var(--border);
       color: var(--muted); width: 32px; height: 32px;
       display: flex; align-items: center; justify-content: center;
-      cursor: none; font-size: 14px;
+      cursor: none; font-size: 16px;
       transition: border-color 0.2s, color 0.2s, background 0.2s;
     }
     .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -114,10 +115,13 @@
       padding: 52px 64px 40px;
       opacity: 0; pointer-events: none;
       transform: translateX(40px);
-      transition: opacity 0.38s ease, transform 0.38s cubic-bezier(.23,1,.32,1);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(.23,1,.32,1);
     }
     .slide.active {
       opacity: 1; pointer-events: all; transform: translateX(0);
+    }
+    .slide.exit-left {
+      opacity: 0; transform: translateX(-40px);
     }
 
     /* ── Slide labels ── */
@@ -210,7 +214,7 @@
       font-family: var(--sans); font-weight: 700; font-size: 16px;
       margin-bottom: 10px; letter-spacing: -0.02em;
     }
-    .card-body { font-size: 12px; color: var(--muted); line-height: 1.75; }
+    .card-body { font-size: 13px; color: var(--muted); line-height: 1.75; }
     .card-body strong { color: var(--text); font-weight: 500; }
 
     /* ── Big number ── */
@@ -336,7 +340,7 @@
     .pipe-step-name { font-family: var(--sans); font-weight: 600; font-size: 13px; }
     .pipe-arrow {
       width: 24px; flex-shrink: 0; display: flex; align-items: center;
-      justify-content: center; color: var(--muted); font-size: 14px;
+      justify-content: center; color: var(--muted); font-size: 16px;
     }
 
     /* ── Model cards ── */
@@ -355,7 +359,7 @@
     }
     .model-body { padding: 18px 20px; }
     .model-name { font-family: var(--sans); font-size: 16px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
-    .model-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .model-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
     .model-result {
       padding: 18px 20px; border-left: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
@@ -396,8 +400,8 @@
       color: var(--accent2); border-right: 1px solid var(--border);
     }
     .attention-body { padding: 16px 20px; }
-    .attention-title { font-family: var(--sans); font-size: 14px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
-    .attention-desc { font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .attention-title { font-family: var(--sans); font-size: 16px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .attention-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
     .attention-ref { font-size: 10px; color: var(--accent2); margin-top: 6px; letter-spacing: 0.06em; }
 
     /* ── Conclusion list ── */
@@ -409,10 +413,10 @@
       flex: 1; transition: border-color 0.2s, background 0.2s;
     }
     .conclusion-item:hover { background: var(--surface); }
-    .conclusion-icon { color: var(--accent); font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    .conclusion-icon { color: var(--accent); font-size: 16px; flex-shrink: 0; margin-top: 2px; }
     .conclusion-icon.orange { color: var(--accent2); }
     .conclusion-icon.muted  { color: var(--muted); }
-    .conclusion-text { font-size: 12px; line-height: 1.8; color: var(--muted); }
+    .conclusion-text { font-size: 13px; line-height: 1.8; color: var(--muted); }
     .conclusion-text strong { color: var(--text); font-weight: 500; }
 
     /* ── Keyboard hint ── */
@@ -430,7 +434,7 @@
     .smote-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; flex: 1; }
     .smote-col { border: 1px solid var(--border); background: var(--surface); padding: 20px; }
     .smote-head { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
-    .smote-head strong { color: var(--text); font-family: var(--sans); font-size: 14px; display: block; font-weight: 700; margin-top: 4px; letter-spacing: -0.01em; }
+    .smote-head strong { color: var(--text); font-family: var(--sans); font-size: 16px; display: block; font-weight: 700; margin-top: 4px; letter-spacing: -0.01em; }
     .bar-row { margin-bottom: 14px; }
     .bar-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.06em; }
     .bar-track { height: 12px; background: var(--border); position: relative; }
@@ -452,7 +456,7 @@
       display: flex; gap: 14px; align-items: flex-start;
     }
     .reason-num { color: var(--accent); font-size: 11px; letter-spacing: 0.1em; flex-shrink: 0; margin-top: 2px; }
-    .reason-body { font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .reason-body { font-size: 13px; color: var(--muted); line-height: 1.7; }
     .reason-body strong { color: var(--text); font-weight: 500; }
 
     /* ── Contrib ── */
@@ -468,8 +472,8 @@
       color: var(--accent); border-right: 1px solid var(--border);
     }
     .contrib-body { padding: 14px 20px; }
-    .contrib-title { font-family: var(--sans); font-size: 14px; font-weight: 700; margin-bottom: 5px; letter-spacing: -0.01em; }
-    .contrib-desc { font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .contrib-title { font-family: var(--sans); font-size: 16px; font-weight: 700; margin-bottom: 5px; letter-spacing: -0.01em; }
+    .contrib-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
 
     /* ── Roteiro ── */
     .roteiro-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; flex: 1; }
@@ -480,7 +484,7 @@
     }
     .roteiro-item:hover { border-color: #2a2a2a; }
     .roteiro-num { font-family: var(--sans); font-weight: 800; font-size: 32px; letter-spacing: -0.04em; color: var(--accent); margin-bottom: 12px; }
-    .roteiro-title { font-family: var(--sans); font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+    .roteiro-title { font-family: var(--sans); font-weight: 700; font-size: 16px; margin-bottom: 8px; }
     .roteiro-desc { font-size: 11px; color: var(--muted); line-height: 1.7; flex: 1; }
     .roteiro-time { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
 
@@ -526,7 +530,7 @@
       Performance in<br>
       <em>Optical Transport Networks</em>
     </h1>
-    <p class="cover-sub">Using LSTM-Based Deep Learning Models — Rayhan Aziz Budiana et al.<br>Apresentação com fundamentos em ITU-T G.709, G.798 e G.7710</p>
+    <p class="cover-sub">Using LSTM-Based Deep Learning Models — Rayhan Aziz Budiana et al.<br>Apresentação com fundamentos em ITU-T G.709 e G.798</p>
     <div class="cover-meta">
       <div class="meta-item"><strong>Conferência</strong>ICWT 2025 · IEEE</div>
       <div class="meta-item"><strong>Tema</strong>IA + Redes OTN</div>
@@ -551,7 +555,7 @@
       <div class="roteiro-item">
         <div class="roteiro-num">02</div>
         <div class="roteiro-title">Contexto OTN</div>
-        <div class="roteiro-desc">Defeitos por camada, hierarquia causal de propagação (G.798) e distinção defeito vs alarme.</div>
+        <div class="roteiro-desc">Defeitos por camada (G.798), contadores PM e hierarquia causal.</div>
         <div class="roteiro-time">3 min</div>
       </div>
       <div class="roteiro-item">
@@ -583,35 +587,19 @@
     </div>
     <div class="grid-2" style="align-items:start">
       <div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:0.08em;text-transform:uppercase">Cascata a partir de um único dLOS</div>
-
-        <div style="border:1px solid var(--border);padding:12px 16px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2.1;margin-bottom:6px">
-          <div style="color:var(--accent2);font-size:10px;margin-bottom:4px">— fixo (independe de N) —</div>
-          1× dLOS &nbsp;+&nbsp; 1× dLOF &nbsp;+&nbsp; 1× OTU-AIS &nbsp;+&nbsp; 1× OTU-BDI
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-          <div style="border:1px solid var(--border);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2">
-            <div style="color:var(--accent2);font-size:10px;margin-bottom:4px">N = 1 &nbsp;(sem agregador)</div>
-            1× ODU-AIS + 1× ODU-BDI<br>
-            1×6× TCMi-AIS + 1×6× TCMi-BDI<br>
-            1× Client-AIS<br>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Total: <strong style="color:var(--text)">19 defeitos</strong></div>
-          </div>
-          <div style="border:1px solid var(--accent);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2">
-            <div style="color:var(--accent);font-size:10px;margin-bottom:4px">N ≥ 2 &nbsp;(+ agregador ODU)</div>
-            (N+1)× ODU-AIS + (N+1)× ODU-BDI<br>
-            (N+1)×6× TCMi-AIS + (N+1)×6× TCMi-BDI<br>
-            N× Client-AIS<br>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">N=2 → <strong style="color:var(--text)">48</strong> &nbsp;·&nbsp; N=4 → <strong style="color:var(--text)">78 defeitos</strong></div>
-          </div>
+        <div class="big-num" style="margin-bottom:8px">15<span style="font-size:0.5em;color:var(--muted)">+</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:28px">defeitos gerados em &lt; 200ms<br>a partir de <strong style="color:var(--text)">um único evento</strong></div>
+        <div class="card" style="margin-bottom:3px">
+          <div class="card-accent"></div>
+          <div class="card-label">O desafio</div>
+          <div class="card-body">Redes DWDM modernas operam centenas de λ simultâneos. Um único dLOS gera cascata de defeitos em múltiplas camadas em milissegundos — gestão manual é inviável com SLA de 99,999%.</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
         <div class="card">
           <div class="card-accent"></div>
-          <div class="card-label">O desafio</div>
-          <div class="card-body">Redes DWDM modernas operam centenas de λ simultâneos. Um único dLOS gera cascata de defeitos em múltiplas camadas em milissegundos — gestão manual é inviável com SLA de 99,999%.</div>
+          <div class="card-label">A oportunidade</div>
+          <div class="card-body">IA pode detectar <strong>degradação progressiva</strong> antes que o defeito dispare — a G.798 define contadores PM exatamente para isso: BIP-8, ES, SES, BBE e UAS nas janelas de 15min e 24h.</div>
         </div>
         <div class="card">
           <div class="card-accent orange"></div>
@@ -631,7 +619,7 @@
     <div class="layer-table">
       <div class="layer-row">
         <div class="layer-name" style="background:#2d0f0f;color:#ff6b6b">OTS / OMS</div>
-        <div class="layer-defects">dLOS</div>
+        <div class="layer-defects">dLOS &nbsp; dLOP &nbsp; dLOM</div>
         <div class="layer-note">Camada óptica — defeitos primários de origem</div>
       </div>
       <div class="layer-row">
@@ -656,7 +644,7 @@
       </div>
     </div>
     <div style="margin-top:10px;font-size:10px;color:var(--muted);letter-spacing:0.06em">
-      <span style="color:var(--accent2)">Nota:</span> prefixo <span style="color:var(--accent);font-family:var(--mono)">d</span> = defeito detectado (condição técnica). Alarme = notificação gerada a partir do defeito.
+      <span style="color:var(--accent2)">Nota:</span> prefixo <span style="color:var(--accent);font-family:var(--mono)">d</span> = defeito detectado (condição técnica). Alarme = notificação gerada a partir do defeito. <span style="color:var(--accent);font-family:var(--mono)">dBDI</span> = Backward Defect Indication (G.798) — substitui o termo RDI da versão 2006.
     </div>
   </div>
 
@@ -713,11 +701,10 @@
             <tr><td>SES</td><td>Severely Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
             <tr><td>UAS</td><td>Unavailable Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
             <tr><td>BBE</td><td>Background Block Errors</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td style="color:var(--accent)">FEC corr.</td><td>Erros corrigidos pelo FEC — <strong>mais preditivo</strong>: enlace queima margem silenciosamente antes de qualquer BER visível</td><td>Contínuo</td><td>OTU</td></tr>
           </tbody>
         </table>
         <div style="margin-top:14px;font-size:11px;color:var(--muted);border:1px solid var(--border);padding:12px 16px">
-          Métricas primitivas (BIP-8, BEI) definidas na <strong style="color:var(--text)">G.798</strong>. A disponibilização via interfaces de gerência — para coleta e análise — depende da <strong style="color:var(--text)">G.7710</strong>. São a "temperatura" da rede antes da "febre" do defeito — e estão ausentes do artigo.
+          Esses dados estão disponíveis em <strong style="color:var(--text)">todo NE OTN</strong> compatível com G.709. São a "temperatura" da rede antes da "febre" do defeito — e estão ausentes do artigo.
         </div>
       </div>
     </div>
@@ -744,6 +731,17 @@
           <div class="compare-item"><span class="compare-icon">✓</span><span>Sistema de manutenção preditiva inteligente</span></div>
         </div>
       </div>
+      <div class="compare-col">
+        <div class="compare-head muted">// observado na leitura</div>
+        <div class="compare-body">
+          <div class="compare-item"><span class="compare-icon muted">→</span><span>Foco em enlace ponto-a-ponto sem regeneração</span></div>
+          <div class="compare-item"><span class="compare-icon muted">→</span><span>Ênfase em dLOS e dLOF — camadas OTS/OTU</span></div>
+          <div class="compare-item"><span class="compare-icon muted">→</span><span>Alarmes codificados como labels temporais</span></div>
+          <div class="compare-item"><span class="compare-icon muted">→</span><span>Horizonte de predição não definido explicitamente</span></div>
+          <div class="compare-item"><span class="compare-icon muted">→</span><span>Proporção original de classes não documentada</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ S7: DATASET E SMOTE ══ -->
@@ -810,17 +808,17 @@
           <div class="model-desc">Rede recorrente com memória seletiva <strong>unidirecional</strong>. Gates de entrada, esquecimento e saída controlam o que é retido ao longo da sequência. Aprende: "depois deste padrão de defeitos, o próximo tende a ser X".</div>
         </div>
         <div class="model-result">
-          <div><div class="model-result-val" style="color:var(--muted);font-size:16px">~88%</div><div class="model-result-sub">acurácia</div><div class="model-result-val" style="color:var(--muted);font-size:14px;margin-top:4px">F1 ~0,82</div><div class="model-result-sub">(estimado)</div></div>
+          <div><div class="model-result-val" style="color:var(--muted)">base</div><div class="model-result-sub">linha</div></div>
         </div>
       </div>
       <div class="model-row">
         <div class="model-tag" style="color:#6699ff">Bi<br>LSTM</div>
         <div class="model-body">
           <div class="model-name">Bidirectional LSTM</div>
-          <div class="model-desc">Processa a sequência nos <strong>dois sentidos simultaneamente</strong>: uma LSTM no sentido passado→futuro e outra no sentido futuro→passado. As duas saídas são concatenadas, capturando contexto bidirecional de cada evento.</div>
+          <div class="model-desc">Processa a sequência nos <strong>dois sentidos</strong> (passado→presente e futuro→presente), capturando contexto mais rico. Permite que o modelo "veja" o que acontece antes e depois de cada evento na janela temporal.</div>
         </div>
         <div class="model-result">
-          <div><div class="model-result-val" style="color:#6699ff;font-size:16px">~91%</div><div class="model-result-sub">acurácia</div><div class="model-result-val" style="color:#6699ff;font-size:14px;margin-top:4px">F1 ~0,87</div><div class="model-result-sub">(estimado)</div></div>
+          <div><div class="model-result-val" style="color:#6699ff">médio</div><div class="model-result-sub">resultado</div></div>
         </div>
       </div>
       <div class="model-row" style="border-color:#2a2a2a">
@@ -1004,7 +1002,7 @@
         <div class="attention-body">
           <div class="attention-title">Contadores PM como features preditivas (G.798 §9)</div>
           <div class="attention-desc">BIP-8, ES, SES, BBE e UAS registram degradação progressiva nas janelas de 15min e 24h — antes que qualquer defeito dispare. Incluir esses contadores poderia transformar o modelo de reativo em verdadeiramente preditivo.</div>
-          <div class="attention-ref">→ Exposição via gerência depende da G.7710 — não apenas da G.709</div>
+          <div class="attention-ref">→ Dado disponível em todo NE OTN compatível com G.709</div>
         </div>
       </div>
     </div>
@@ -1039,7 +1037,7 @@
       </div>
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:10px;color:var(--muted);letter-spacing:0.08em">ITU-T G.709 · G.798 · G.7710 · IEEE ICWT 2025 · Rayhan Aziz Budiana et al.</span>
+      <span style="font-size:10px;color:var(--muted);letter-spacing:0.08em">ITU-T G.709 · G.798 · IEEE ICWT 2025 · Rayhan Aziz Budiana et al.</span>
       <a href="https://esantos-798.github.io" style="font-size:11px;color:var(--accent);text-decoration:none;letter-spacing:0.08em">esantos-798.github.io ↗</a>
     </div>
   </div>
@@ -1073,46 +1071,17 @@
   // ── Slide engine ──
   const TOTAL  = 14;
   let current  = 1;
-  let animating = false;
 
   function go(dir) {
-    if (animating) return;
     const next = current + dir;
     if (next < 1 || next > TOTAL) return;
-    animating = true;
-
-    const prevEl = document.getElementById('s' + current);
-    const nextEl = document.getElementById('s' + next);
-
-    // Posicionar slide de entrada fora da tela
-    nextEl.style.transform = dir > 0 ? 'translateX(40px)' : 'translateX(-40px)';
-    nextEl.style.opacity = '0';
-    nextEl.style.pointerEvents = 'none';
-    nextEl.classList.add('active');
-
-    // Forçar reflow
-    nextEl.getBoundingClientRect();
-
-    // Animar saída do slide atual
-    prevEl.style.transform = dir > 0 ? 'translateX(-40px)' : 'translateX(40px)';
-    prevEl.style.opacity = '0';
-
-    // Animar entrada do novo slide
-    nextEl.style.transform = 'translateX(0)';
-    nextEl.style.opacity = '1';
-
-    setTimeout(() => {
-      prevEl.classList.remove('active');
-      prevEl.style.transform = '';
-      prevEl.style.opacity = '';
-      prevEl.style.pointerEvents = '';
-      nextEl.style.transform = '';
-      nextEl.style.opacity = '';
-      nextEl.style.pointerEvents = '';
-      animating = false;
-    }, 420);
-
+    const prev = document.getElementById('s' + current);
+    prev.classList.remove('active');
+    prev.classList.add(dir > 0 ? 'exit-left' : '');
+    setTimeout(() => prev.classList.remove('exit-left'), 420);
     current = next;
+    const el = document.getElementById('s' + current);
+    el.classList.add('active');
     updateUI();
   }
 
