@@ -1,1159 +1,923 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OTN + LSTM — Apresentação · ERS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predicting Alarm Performance in Optical Transport Networks</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --text: #e8e8f0;
+    --text-muted: #888899;
+    --border: #2a2a3a;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --slide-w: 1280px;
+    --slide-h: 720px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Pro Display', 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
 
-    :root {
-      --bg:      #0a0a0a;
-      --surface: #111111;
-      --border:  #1e1e1e;
-      --text:    #e8e8e2;
-      --muted:   #555;
-      --accent:  #c8ff00;
-      --accent2: #ff6b35;
-      --mono:    'DM Mono', monospace;
-      --sans:    'Syne', sans-serif;
-    }
+  /* ── SLIDE WRAPPER ── */
+  .deck { width: 100%; }
+  .slide {
+    width: var(--slide-w);
+    min-height: var(--slide-h);
+    margin: 0 auto 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    page-break-after: always;
+  }
 
-    html, body { height: 100%; overflow: hidden; cursor: none; }
+  /* ── SLIDE HEADER BAR ── */
+  .slide-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .slide-header .brand { font-size: 13px; color: var(--text-muted); letter-spacing: .08em; }
+  .slide-header .tag {
+    font-size: 12px; color: var(--accent2);
+    background: rgba(108,99,255,.12); padding: 4px 12px; border-radius: 20px;
+  }
+  .slide-num { font-size: 12px; color: var(--text-muted); }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 14px;
-      line-height: 1.7;
-    }
+  /* ── SLIDE BODY ── */
+  .slide-body {
+    padding: 56px 72px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    min-height: calc(var(--slide-h) - 56px);
+  }
 
-    /* ── Noise overlay ── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none; z-index: 1000; opacity: 0.5;
-    }
+  /* ── HEADINGS ── */
+  h1 { font-size: 46px; font-weight: 700; line-height: 1.15; color: var(--text); }
+  h1 em, h2 em { font-style: normal; color: var(--accent2); }
+  h2 { font-size: 38px; font-weight: 700; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; color: var(--text-muted); }
 
-    /* ── Custom cursor ── */
-    .cursor {
-      width: 10px; height: 10px;
-      background: var(--accent); border-radius: 50%;
-      position: fixed; top: 0; left: 0;
-      pointer-events: none; z-index: 9999;
-      transition: transform 0.15s ease, background 0.2s;
-      mix-blend-mode: difference;
-    }
-    .cursor-ring {
-      width: 36px; height: 36px;
-      border: 1px solid rgba(200,255,0,0.4); border-radius: 50%;
-      position: fixed; top: 0; left: 0;
-      pointer-events: none; z-index: 9998;
-      transition: transform 0.35s cubic-bezier(.23,1,.32,1);
-    }
+  .section-tag {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 500;
+  }
 
-    /* ── Top bar ── */
-    .topbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      padding: 18px 48px;
-      display: flex; justify-content: space-between; align-items: center;
-      z-index: 200;
-      background: rgba(10,10,10,0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-    .topbar-logo {
-      font-family: var(--sans); font-weight: 800; font-size: 16px;
-      color: var(--text); text-decoration: none; letter-spacing: -0.5px;
-    }
-    .topbar-logo span { color: var(--accent); }
-    .topbar-title {
-      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--muted);
-    }
-    .topbar-controls {
-      display: flex; align-items: center; gap: 24px;
-    }
-    .slide-counter {
-      font-size: 11px; letter-spacing: 0.1em; color: var(--muted);
-    }
-    .slide-counter span { color: var(--accent); }
-    .nav-btn {
-      background: none; border: 1px solid var(--border);
-      color: var(--muted); width: 32px; height: 32px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: none; font-size: 14px;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-    }
-    .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .nav-btn:disabled { opacity: 0.2; pointer-events: none; }
+  /* ── COVER SLIDE ── */
+  .cover .slide-body { justify-content: center; gap: 24px; }
+  .cover .meta-row {
+    display: flex; gap: 40px; flex-wrap: wrap; margin-top: 16px;
+  }
+  .cover .meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .cover .meta-label { font-size: 11px; color: var(--text-muted); letter-spacing: .1em; text-transform: uppercase; }
+  .cover .meta-value { font-size: 15px; color: var(--text); font-weight: 500; }
+  .cover .subtitle { font-size: 18px; color: var(--text-muted); line-height: 1.6; }
+  .cover .big-tag {
+    display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .1em;
+    color: var(--accent); background: rgba(108,99,255,.15); padding: 8px 20px;
+    border-radius: 6px; border: 1px solid rgba(108,99,255,.3); margin-bottom: 8px;
+  }
 
-    /* ── Progress bar ── */
-    .progress-bar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      height: 2px; background: var(--border); z-index: 200;
-    }
-    .progress-fill {
-      height: 100%; background: var(--accent);
-      transition: width 0.4s cubic-bezier(.23,1,.32,1);
-    }
+  /* ── AGENDA SLIDE ── */
+  .agenda-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 8px;
+  }
+  .agenda-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .agenda-item .num {
+    font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: .1em;
+  }
+  .agenda-item .title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .agenda-item .desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; flex: 1; }
+  .agenda-item .time {
+    font-size: 12px; color: var(--accent2); font-weight: 500;
+    background: rgba(167,139,250,.1); padding: 3px 10px; border-radius: 20px;
+    align-self: flex-start;
+  }
 
-    /* ── Slide container ── */
-    .deck {
-      position: fixed;
-      top: 61px; left: 0; right: 0; bottom: 2px;
-      overflow: hidden;
-    }
-    .slide {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      padding: 52px 64px 40px;
-      opacity: 0; pointer-events: none;
-      transform: translateX(40px);
-      transition: opacity 0.38s ease, transform 0.38s cubic-bezier(.23,1,.32,1);
-    }
-    .slide.active {
-      opacity: 1; pointer-events: all; transform: translateX(0);
-    }
+  /* ── CASCADE / MOTIVATION ── */
+  .cascade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .cascade-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 28px 28px 24px;
+  }
+  .cascade-box .box-label {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 14px; font-weight: 500;
+  }
+  .cascade-box .fixed-note {
+    font-size: 12px; color: var(--text-muted); font-style: italic; margin-bottom: 12px;
+  }
+  .cascade-box .formula {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13.5px;
+    color: var(--text); line-height: 2; padding: 12px 0;
+  }
+  .cascade-box .formula .kw { color: var(--accent2); }
+  .cascade-box .total {
+    margin-top: 12px; font-size: 20px; font-weight: 700;
+    color: var(--amber);
+  }
+  .cascade-box .sizes { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
 
-    /* ── Slide labels ── */
-    .slide-label {
-      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 20px;
-    }
+  .callout {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 28px; font-size: 15px; color: var(--text-muted); line-height: 1.7;
+  }
+  .callout strong { color: var(--text); }
+  .callout-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-    /* ── CAPA ── */
-    .slide-cover {
-      justify-content: flex-end;
-      padding-bottom: 60px;
-    }
-    .cover-bg-text {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -55%);
-      font-family: var(--sans); font-weight: 800;
-      font-size: clamp(80px, 14vw, 200px);
-      color: transparent; -webkit-text-stroke: 1px #161616;
-      white-space: nowrap; pointer-events: none; letter-spacing: -0.04em;
-      animation: drift 12s ease-in-out infinite alternate;
-    }
-    @keyframes drift {
-      from { transform: translate(-50%, -55%) translateX(-20px); }
-      to   { transform: translate(-50%, -55%) translateX(20px); }
-    }
-    .cover-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 10px; color: var(--muted); letter-spacing: 0.12em;
-      text-transform: uppercase; margin-bottom: 24px;
-    }
-    .cover-dot {
-      width: 6px; height: 6px; background: var(--accent);
-      border-radius: 50%; animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity:1; transform:scale(1); }
-      50%      { opacity:0.4; transform:scale(0.7); }
-    }
-    .cover-title {
-      font-family: var(--sans); font-weight: 800;
-      font-size: clamp(32px, 5vw, 72px);
-      line-height: 0.95; letter-spacing: -0.04em;
-      margin-bottom: 20px;
-    }
-    .cover-title em { font-style: italic; font-weight: 500; color: var(--muted); }
-    .cover-sub {
-      color: var(--muted); font-size: 13px; max-width: 520px;
-      line-height: 1.8; margin-bottom: 36px;
-    }
-    .cover-meta {
-      display: flex; gap: 32px;
-    }
-    .meta-item { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
-    .meta-item strong { color: var(--accent); display: block; font-weight: 500; margin-bottom: 2px; }
+  /* ── OTN LAYERS ── */
+  .layer-stack { display: flex; flex-direction: column; gap: 10px; }
+  .layer {
+    display: grid; grid-template-columns: 100px 1fr;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden;
+  }
+  .layer-name {
+    background: rgba(108,99,255,.12); border-right: 1px solid var(--border);
+    padding: 12px 14px; font-size: 13px; font-weight: 700; color: var(--accent2);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  .layer-defects {
+    padding: 12px 18px; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12.5px; color: var(--text); line-height: 1.8;
+  }
+  .layer-note { font-size: 12px; color: var(--text-muted); }
+  .footnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
 
-    /* ── Section header ── */
-    .slide-header {
-      margin-bottom: 32px;
-    }
-    .slide-title {
-      font-family: var(--sans); font-weight: 700;
-      font-size: clamp(24px, 3vw, 42px);
-      line-height: 1.0; letter-spacing: -0.03em;
-    }
-    .slide-title em { font-style: italic; font-weight: 500; color: var(--muted); }
+  /* ── PM COUNTERS ── */
+  .timeline-row {
+    display: flex; align-items: stretch; gap: 0; margin-bottom: 24px;
+  }
+  .tl-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 8px; position: relative;
+  }
+  .tl-item::after {
+    content: '→'; position: absolute; right: -12px; top: 22px;
+    color: var(--text-muted); font-size: 18px;
+  }
+  .tl-item:last-child::after { display: none; }
+  .tl-badge {
+    font-family: 'SF Mono', monospace; font-size: 14px; font-weight: 700;
+    color: var(--amber); background: rgba(251,191,36,.1);
+    padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(251,191,36,.2);
+  }
+  .tl-badge.red { color: var(--red); background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.2); }
+  .tl-label { font-size: 12px; color: var(--text-muted); text-align: center; }
+  .tl-time { font-size: 11px; color: var(--accent2); font-weight: 600; }
 
-    /* ── Grid layouts ── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; flex: 1; }
-    .grid-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+  .pm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .pm-table th {
+    background: rgba(108,99,255,.12); color: var(--accent2);
+    font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .pm-table td { padding: 10px 14px; border-bottom: 1px solid rgba(42,42,58,.6); }
+  .pm-table tr:last-child td { border-bottom: none; }
+  .pm-table td:first-child { font-family: 'SF Mono', monospace; color: var(--accent2); font-weight: 600; }
 
-    /* ── Cards ── */
-    .card {
-      border: 1px solid var(--border);
-      padding: 24px; background: var(--surface);
-      position: relative; overflow: hidden;
-    }
-    .card-accent {
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 2px; background: var(--accent);
-    }
-    .card-accent.orange { background: var(--accent2); }
-    .card-accent.muted  { background: var(--muted); }
-    .card-label {
-      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 12px;
-    }
-    .card-title {
-      font-family: var(--sans); font-weight: 700; font-size: 16px;
-      margin-bottom: 10px; letter-spacing: -0.02em;
-    }
-    .card-body { font-size: 12px; color: var(--muted); line-height: 1.75; }
-    .card-body strong { color: var(--text); font-weight: 500; }
+  /* ── ARTICLE SCOPE ── */
+  .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .scope-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px;
+  }
+  .scope-box .scope-title {
+    font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 14px;
+  }
+  .scope-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px; color: var(--text); padding: 6px 0;
+    border-bottom: 1px solid rgba(42,42,58,.5); line-height: 1.5;
+  }
+  .scope-item:last-child { border-bottom: none; }
+  .scope-item .icon { color: var(--green); font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 
-    /* ── Big number ── */
-    .big-num {
-      font-family: var(--sans); font-weight: 800;
-      font-size: clamp(48px, 7vw, 96px);
-      line-height: 1; letter-spacing: -0.04em;
-      color: var(--accent);
-    }
-    .big-num.orange { color: var(--accent2); }
-    .big-num.muted  { color: #333; }
+  .central-prop {
+    background: rgba(108,99,255,.08); border: 1px solid rgba(108,99,255,.25);
+    border-radius: 10px; padding: 24px 28px;
+  }
+  .central-prop .cp-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent2); margin-bottom: 10px; font-weight: 600; }
+  .central-prop p { font-size: 16px; color: var(--text); line-height: 1.7; }
+  .central-prop strong { color: var(--accent2); }
 
-    /* ── Layer table (slide 4) ── */
-    .layer-table { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-    .layer-row {
-      display: grid; grid-template-columns: 130px 1fr 200px;
-      gap: 3px; align-items: stretch;
-    }
-    .layer-name {
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--sans); font-weight: 700; font-size: 12px;
-      letter-spacing: 0.04em; padding: 10px 8px; text-align: center;
-    }
-    .layer-defects {
-      border: 1px solid var(--border); background: var(--surface);
-      padding: 10px 14px; font-family: var(--mono); font-size: 11px;
-      color: var(--accent); letter-spacing: 0.04em;
-      display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px;
-    }
-    .layer-note {
-      border: 1px solid var(--border); background: #0d0d0d;
-      padding: 10px 12px; font-size: 10px; color: var(--muted);
-      font-style: italic; display: flex; align-items: center;
-      letter-spacing: 0.04em;
-    }
+  /* ── SMOTE ── */
+  .smote-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .smote-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .smote-box .sb-label { font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .bar-row { display: flex; flex-direction: column; gap: 8px; }
+  .bar-item { display: flex; flex-direction: column; gap: 4px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 13px; }
+  .bar-label .bname { color: var(--text); }
+  .bar-label .bpct { color: var(--accent2); font-weight: 600; }
+  .bar-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-fill.normal { background: var(--accent); }
+  .bar-fill.defect { background: var(--amber); }
+  .smote-note { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
 
-    /* ── Timeline (slide 5) ── */
-    .timeline {
-      display: flex; align-items: flex-end; gap: 0;
-      flex: 1; padding-top: 16px;
-    }
-    .tl-item {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; position: relative;
-    }
-    .tl-item::after {
-      content: ''; position: absolute;
-      top: 0; right: 0; width: 1px; height: 100%;
-      background: var(--border);
-    }
-    .tl-item:last-child::after { display: none; }
-    .tl-bar-wrap {
-      width: 100%; display: flex; justify-content: center;
-      align-items: flex-end; height: 120px;
-    }
-    .tl-bar {
-      width: 48px; border-top: 2px solid;
-      transition: height 0.6s ease;
-    }
-    .tl-label-top {
-      font-family: var(--sans); font-size: 18px; font-weight: 700;
-      margin: 12px 0 4px; text-align: center;
-    }
-    .tl-desc { font-size: 10px; color: var(--muted); text-align: center; max-width: 120px; }
-    .tl-time {
-      margin-top: 16px; font-size: 10px; letter-spacing: 0.1em;
-      color: var(--muted); text-align: center;
-    }
-    .tl-line {
-      position: absolute; bottom: 56px; left: 0; right: 0;
-      height: 1px; background: var(--border);
-    }
+  .pipeline-row {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+  }
+  .pipe-step {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; font-size: 13px; text-align: center;
+  }
+  .pipe-step .ps-num { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .pipe-step .ps-name { color: var(--text); font-weight: 500; }
+  .pipe-arrow { color: var(--text-muted); font-size: 20px; padding: 0 8px; }
 
-    /* ── PM table ── */
-    .pm-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    .pm-table th {
-      text-align: left; padding: 10px 16px;
-      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--accent); border-bottom: 1px solid var(--border);
-      font-weight: 500;
-    }
-    .pm-table td {
-      padding: 10px 16px; font-size: 12px; color: var(--muted);
-      border-bottom: 1px solid var(--border);
-    }
-    .pm-table td:first-child { color: var(--text); font-family: var(--mono); }
-    .pm-table tr:last-child td { border-bottom: none; }
-    .pm-table tr:hover td { background: var(--surface); }
+  /* ── MODELS ── */
+  .models-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .model-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .model-card.best { border-color: var(--accent); background: rgba(108,99,255,.08); }
+  .model-card .mc-name {
+    font-size: 20px; font-weight: 800; color: var(--accent2); letter-spacing: -.01em;
+  }
+  .model-card .mc-full { font-size: 13px; color: var(--text-muted); }
+  .model-card .mc-desc { font-size: 13.5px; color: var(--text); line-height: 1.6; flex: 1; }
+  .model-card .mc-metrics { display: flex; gap: 16px; }
+  .metric-pill {
+    display: flex; flex-direction: column; gap: 2px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 14px;
+  }
+  .metric-pill .mp-val { font-size: 20px; font-weight: 700; color: var(--text); }
+  .metric-pill.best-metric .mp-val { color: var(--green); }
+  .metric-pill .mp-label { font-size: 11px; color: var(--text-muted); }
 
-    /* ── Two-col compare ── */
-    .compare-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; flex: 1; }
-    .compare-col { border: 1px solid var(--border); display: flex; flex-direction: column; }
-    .compare-head {
-      padding: 14px 20px;
-      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-    }
-    .compare-head.green { color: var(--accent); }
-    .compare-head.muted { color: var(--muted); }
-    .compare-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-    .compare-item {
-      font-size: 12px; color: var(--muted); line-height: 1.6;
-      padding-bottom: 10px; border-bottom: 1px solid var(--border);
-      display: flex; gap: 10px;
-    }
-    .compare-item:last-child { border-bottom: none; }
-    .compare-icon { color: var(--accent); flex-shrink: 0; }
-    .compare-icon.muted { color: #333; }
+  /* ── RESULTS ── */
+  .results-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .stat-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; text-align: center;
+  }
+  .stat-card .sc-val { font-size: 44px; font-weight: 800; color: var(--green); line-height: 1; }
+  .stat-card .sc-label { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
+  .insights { display: flex; flex-direction: column; gap: 10px; }
+  .insight {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px;
+  }
+  .insight .arrow { color: var(--accent2); font-size: 16px; flex-shrink: 0; }
+  .insight p { font-size: 14px; color: var(--text); line-height: 1.6; }
+  .insight strong { color: var(--accent2); }
 
-    /* ── Pipeline ── */
-    .pipeline {
-      display: flex; align-items: center; gap: 0;
-      margin: 20px 0;
-    }
-    .pipe-step {
-      flex: 1; border: 1px solid var(--border);
-      padding: 16px 12px; text-align: center;
-      position: relative; background: var(--surface);
-      transition: border-color 0.2s;
-    }
-    .pipe-step.active-step { border-color: var(--accent); }
-    .pipe-step-num { font-size: 10px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.1em; }
-    .pipe-step-name { font-family: var(--sans); font-weight: 600; font-size: 13px; }
-    .pipe-arrow {
-      width: 24px; flex-shrink: 0; display: flex; align-items: center;
-      justify-content: center; color: var(--muted); font-size: 14px;
-    }
+  /* ── HYBRID FLOW ── */
+  .flow-row {
+    display: flex; align-items: center; gap: 0; margin-bottom: 32px; overflow-x: auto;
+  }
+  .flow-node {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 18px; text-align: center; flex-shrink: 0;
+  }
+  .flow-node .fn-label { font-size: 11px; color: var(--text-muted); }
+  .flow-node .fn-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .flow-arrow { color: var(--text-muted); font-size: 24px; padding: 0 10px; }
 
-    /* ── Model cards ── */
-    .model-row {
-      border: 1px solid var(--border);
-      display: grid; grid-template-columns: 100px 1fr auto;
-      gap: 0; align-items: stretch; margin-bottom: 3px;
-      transition: border-color 0.2s;
-    }
-    .model-row:hover { border-color: #2a2a2a; }
-    .model-tag {
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--sans); font-weight: 700; font-size: 13px;
-      padding: 20px 12px; text-align: center;
-      border-right: 1px solid var(--border);
-    }
-    .model-body { padding: 18px 20px; }
-    .model-name { font-family: var(--sans); font-size: 16px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
-    .model-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
-    .model-result {
-      padding: 18px 20px; border-left: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      min-width: 130px; text-align: center;
-    }
-    .model-result-val { font-family: var(--sans); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
-    .model-result-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 4px; }
+  .why-list { display: flex; flex-direction: column; gap: 14px; }
+  .why-item { display: flex; gap: 16px; align-items: flex-start; }
+  .why-item .wi-num {
+    font-size: 11px; font-weight: 800; color: var(--accent); background: rgba(108,99,255,.15);
+    border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .why-item p { font-size: 14.5px; color: var(--text); line-height: 1.6; }
+  .why-item strong { color: var(--accent2); }
 
-    /* ── Result hero ── */
-    .result-hero { display: flex; gap: 3px; margin-bottom: 20px; }
-    .result-box {
-      border: 1px solid var(--border); background: var(--surface);
-      padding: 28px 32px; flex: 1;
-      position: relative; overflow: hidden;
-    }
-    .result-box::before {
-      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-      height: 1px; background: var(--accent); transform: scaleX(0);
-      transition: transform 0.4s ease; transform-origin: left;
-    }
-    .result-box:hover::before { transform: scaleX(1); }
-    .result-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-    .result-value { font-family: var(--sans); font-weight: 800; font-size: clamp(36px,5vw,64px); letter-spacing: -0.04em; color: var(--accent); }
-    .result-value.orange { color: var(--accent2); }
+  /* ── SMOTE IMPACT ── */
+  .smote-impact { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .si-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px;
+  }
+  .si-box .sib-title { font-size: 14px; font-weight: 700; color: var(--accent2); margin-bottom: 10px; }
+  .si-box p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
+  .si-box .big-stat { font-size: 36px; font-weight: 800; color: var(--green); line-height: 1; margin: 8px 0; }
+  .si-box .big-stat-sub { font-size: 13px; color: var(--text-muted); }
 
-    /* ── Attention items ── */
-    .attention-list { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-    .attention-item {
-      border: 1px solid var(--border); background: var(--surface);
-      display: grid; grid-template-columns: 56px 1fr;
-      align-items: stretch; flex: 1;
-      transition: border-color 0.2s;
-    }
-    .attention-item:hover { border-color: #2a2a2a; }
-    .attention-letter {
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--sans); font-weight: 800; font-size: 28px;
-      color: var(--accent2); border-right: 1px solid var(--border);
-    }
-    .attention-body { padding: 16px 20px; }
-    .attention-title { font-family: var(--sans); font-size: 14px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
-    .attention-desc { font-size: 11px; color: var(--muted); line-height: 1.7; }
-    .attention-ref { font-size: 10px; color: var(--accent2); margin-top: 6px; letter-spacing: 0.06em; }
+  /* ── CONTRIBUTIONS ── */
+  .contrib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .contrib-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; display: flex; gap: 16px;
+  }
+  .contrib-card .cc-num {
+    font-size: 28px; font-weight: 800; color: var(--accent);
+    opacity: .4; flex-shrink: 0; line-height: 1;
+  }
+  .contrib-card .cc-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .contrib-card .cc-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
 
-    /* ── Conclusion list ── */
-    .conclusion-list { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-    .conclusion-item {
-      border: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex; gap: 16px; align-items: flex-start;
-      flex: 1; transition: border-color 0.2s, background 0.2s;
-    }
-    .conclusion-item:hover { background: var(--surface); }
-    .conclusion-icon { color: var(--accent); font-size: 14px; flex-shrink: 0; margin-top: 2px; }
-    .conclusion-icon.orange { color: var(--accent2); }
-    .conclusion-icon.muted  { color: var(--muted); }
-    .conclusion-text { font-size: 12px; line-height: 1.8; color: var(--muted); }
-    .conclusion-text strong { color: var(--text); font-weight: 500; }
+  /* ── ATTENTION / SINGLE POINT ── */
+  .attention-single {
+    background: var(--surface2); border: 1px solid var(--amber);
+    border-radius: 12px; padding: 36px 40px; max-width: 820px;
+  }
+  .att-badge {
+    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .08em;
+    color: var(--amber); background: rgba(251,191,36,.1); padding: 5px 14px;
+    border-radius: 20px; border: 1px solid rgba(251,191,36,.25); margin-bottom: 18px;
+  }
+  .attention-single h3 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+  .attention-single p { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px; }
+  .attention-single .opp {
+    font-size: 13.5px; color: var(--accent2); background: rgba(108,99,255,.1);
+    border-radius: 6px; padding: 10px 16px; border-left: 3px solid var(--accent);
+  }
 
-    /* ── Keyboard hint ── */
-    .kbd-hint {
-      position: fixed; bottom: 18px; left: 50%;
-      transform: translateX(-50%);
-      font-size: 10px; color: var(--muted); letter-spacing: 0.1em;
-      text-transform: uppercase; z-index: 200;
-      display: flex; align-items: center; gap: 12px;
-      transition: opacity 0.5s;
-    }
-    .kbd { border: 1px solid var(--border); padding: 2px 8px; font-size: 10px; }
+  /* ── CONCLUSION ── */
+  .conclusion-checks { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+  .check-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px;
+  }
+  .check-item .ck { color: var(--green); font-size: 18px; flex-shrink: 0; }
+  .check-item p { font-size: 15px; color: var(--text); line-height: 1.6; }
+  .check-item strong { color: var(--accent2); }
+  .future-row { display: flex; flex-direction: column; gap: 10px; }
+  .future-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    border-left: 2px solid var(--accent); padding-left: 16px;
+  }
+  .future-item p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+  .future-item strong { color: var(--text); }
 
-    /* ── Smote bars ── */
-    .smote-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; flex: 1; }
-    .smote-col { border: 1px solid var(--border); background: var(--surface); padding: 20px; }
-    .smote-head { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
-    .smote-head strong { color: var(--text); font-family: var(--sans); font-size: 14px; display: block; font-weight: 700; margin-top: 4px; letter-spacing: -0.01em; }
-    .bar-row { margin-bottom: 14px; }
-    .bar-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.06em; }
-    .bar-track { height: 12px; background: var(--border); position: relative; }
-    .bar-fill { height: 100%; transition: width 1s cubic-bezier(.23,1,.32,1); }
-    .bar-pct { font-family: var(--sans); font-size: 12px; font-weight: 700; margin-top: 4px; }
-
-    /* ── Why hybrid ── */
-    .hybrid-flow { display: flex; align-items: center; gap: 0; margin-bottom: 20px; }
-    .hf-step {
-      flex: 1; border: 1px solid var(--border); background: var(--surface);
-      padding: 14px 10px; text-align: center;
-    }
-    .hf-step-name { font-family: var(--sans); font-weight: 700; font-size: 12px; margin-bottom: 4px; }
-    .hf-step-desc { font-size: 10px; color: var(--muted); }
-    .hf-arrow { width: 20px; flex-shrink: 0; text-align: center; color: var(--muted); }
-    .reason-list { display: flex; flex-direction: column; gap: 3px; }
-    .reason-item {
-      border: 1px solid var(--border); padding: 14px 20px;
-      display: flex; gap: 14px; align-items: flex-start;
-    }
-    .reason-num { color: var(--accent); font-size: 11px; letter-spacing: 0.1em; flex-shrink: 0; margin-top: 2px; }
-    .reason-body { font-size: 12px; color: var(--muted); line-height: 1.7; }
-    .reason-body strong { color: var(--text); font-weight: 500; }
-
-    /* ── Contrib ── */
-    .contrib-list { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-    .contrib-item {
-      border: 1px solid var(--border);
-      display: grid; grid-template-columns: 56px 1fr;
-      align-items: stretch; flex: 1;
-    }
-    .contrib-num {
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--sans); font-weight: 800; font-size: 22px;
-      color: var(--accent); border-right: 1px solid var(--border);
-    }
-    .contrib-body { padding: 14px 20px; }
-    .contrib-title { font-family: var(--sans); font-size: 14px; font-weight: 700; margin-bottom: 5px; letter-spacing: -0.01em; }
-    .contrib-desc { font-size: 11px; color: var(--muted); line-height: 1.7; }
-
-    /* ── Roteiro ── */
-    .roteiro-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; flex: 1; }
-    .roteiro-item {
-      border: 1px solid var(--border); background: var(--surface);
-      padding: 20px 16px; display: flex; flex-direction: column;
-      transition: border-color 0.2s;
-    }
-    .roteiro-item:hover { border-color: #2a2a2a; }
-    .roteiro-num { font-family: var(--sans); font-weight: 800; font-size: 32px; letter-spacing: -0.04em; color: var(--accent); margin-bottom: 12px; }
-    .roteiro-title { font-family: var(--sans); font-weight: 700; font-size: 14px; margin-bottom: 8px; }
-    .roteiro-desc { font-size: 11px; color: var(--muted); line-height: 1.7; flex: 1; }
-    .roteiro-time { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
-
-    @media (max-width: 768px) {
-      .topbar { padding: 14px 20px; }
-      .topbar-title { display: none; }
-      .slide { padding: 36px 24px 30px; }
-      .grid-2, .compare-wrap, .smote-wrap { grid-template-columns: 1fr; }
-      .roteiro-grid { grid-template-columns: 1fr 1fr; }
-      .layer-row { grid-template-columns: 90px 1fr; }
-      .layer-note { display: none; }
-    }
-  </style>
+  .slide-footer {
+    padding: 14px 40px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text-muted);
+    display: flex; justify-content: space-between;
+    background: var(--bg);
+  }
+</style>
 </head>
 <body>
+<div class="deck">
 
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
-
-<!-- TOP BAR -->
-<div class="topbar">
-  <a href="https://esantos-798.github.io" class="topbar-logo">ers<span>.</span></a>
-  <div class="topbar-title">OTN + LSTM · IEEE ICWT 2025</div>
-  <div class="topbar-controls">
-    <span class="slide-counter"><span id="cur">1</span> / <span id="tot">14</span></span>
-    <button class="nav-btn" id="btnPrev" onclick="go(-1)" disabled>←</button>
-    <button class="nav-btn" id="btnNext" onclick="go(1)">→</button>
+<!-- ════════════════════════════════════════════
+     SLIDE 1 — COVER
+═════════════════════════════════════════════ -->
+<div class="slide cover">
+  <div class="slide-header">
+    <span class="brand">esantos-798.github.io</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">1 / 14</span>
+  </div>
+  <div class="slide-body" style="justify-content:center; gap:28px;">
+    <div>
+      <div class="big-tag">OTN</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">IEEE ICWT 2025 · Telkom University</div>
+      <h1>Predicting Alarm Performance in <em>Optical Transport Networks</em></h1>
+    </div>
+    <p class="subtitle">Using LSTM-Based Deep Learning Models — Rayhan Aziz Budiana et al.<br>
+    Apresentação com fundamentos em ITU-T G.709, G.798 e G.7710</p>
+    <div class="meta-row">
+      <div class="meta-item"><span class="meta-label">Conferência</span><span class="meta-value">ICWT 2025 · IEEE</span></div>
+      <div class="meta-item"><span class="meta-label">Tema</span><span class="meta-value">IA + Redes OTN</span></div>
+      <div class="meta-item"><span class="meta-label">Duração</span><span class="meta-value">15 minutos</span></div>
+      <div class="meta-item"><span class="meta-label">Slides</span><span class="meta-value">14</span></div>
+    </div>
   </div>
 </div>
 
-<!-- PROGRESS -->
-<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
-
-<!-- DECK -->
-<div class="deck" id="deck">
-
-  <!-- ══ S1: CAPA ══ -->
-  <div class="slide slide-cover active" id="s1">
-    <div class="cover-bg-text">OTN</div>
-    <div class="cover-badge"><span class="cover-dot"></span>IEEE ICWT 2025 · Telkom University</div>
-    <h1 class="cover-title">
-      Predicting Alarm<br>
-      Performance in<br>
-      <em>Optical Transport Networks</em>
-    </h1>
-    <p class="cover-sub">Using LSTM-Based Deep Learning Models — Rayhan Aziz Budiana et al.<br>Apresentação com fundamentos em ITU-T G.709, G.798 e G.7710</p>
-    <div class="cover-meta">
-      <div class="meta-item"><strong>Conferência</strong>ICWT 2025 · IEEE</div>
-      <div class="meta-item"><strong>Tema</strong>IA + Redes OTN</div>
-      <div class="meta-item"><strong>Duração</strong>15 minutos</div>
-      <div class="meta-item"><strong>Slides</strong>14</div>
-    </div>
+<!-- ════════════════════════════════════════════
+     SLIDE 2 — AGENDA (adjusted: item 05 → 1 ponto, 2 min)
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 00 — roteiro</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">2 / 14</span>
   </div>
-
-  <!-- ══ S2: ROTEIRO ══ -->
-  <div class="slide" id="s2">
-    <div class="slide-label">// 00 — roteiro</div>
-    <div class="slide-header">
-      <h2 class="slide-title">O que vamos<br><em>cobrir.</em></h2>
-    </div>
-    <div class="roteiro-grid">
-      <div class="roteiro-item">
-        <div class="roteiro-num">01</div>
-        <div class="roteiro-title">Motivação</div>
-        <div class="roteiro-desc">Por que IA + OTN agora? O problema de escala de alarmes em redes DWDM.</div>
-        <div class="roteiro-time">2 min</div>
+  <div class="slide-body">
+    <h2>O que vamos <em>cobrir.</em></h2>
+    <div class="agenda-grid">
+      <div class="agenda-item">
+        <span class="num">01</span>
+        <span class="title">Motivação</span>
+        <span class="desc">Por que IA + OTN agora? O problema de escala de alarmes em redes DWDM.</span>
+        <span class="time">2 min</span>
       </div>
-      <div class="roteiro-item">
-        <div class="roteiro-num">02</div>
-        <div class="roteiro-title">Contexto OTN</div>
-        <div class="roteiro-desc">Defeitos por camada, hierarquia causal de propagação (G.798) e distinção defeito vs alarme.</div>
-        <div class="roteiro-time">3 min</div>
+      <div class="agenda-item">
+        <span class="num">02</span>
+        <span class="title">Contexto OTN</span>
+        <span class="desc">Defeitos por camada, hierarquia causal de propagação (G.798) e distinção defeito vs alarme.</span>
+        <span class="time">3 min</span>
       </div>
-      <div class="roteiro-item">
-        <div class="roteiro-num">03</div>
-        <div class="roteiro-title">O Artigo</div>
-        <div class="roteiro-desc">Objetivo declarado, dataset, SMOTE e pipeline completo.</div>
-        <div class="roteiro-time">3 min</div>
+      <div class="agenda-item">
+        <span class="num">03</span>
+        <span class="title">O Artigo</span>
+        <span class="desc">Objetivo declarado, dataset, SMOTE e pipeline completo.</span>
+        <span class="time">3 min</span>
       </div>
-      <div class="roteiro-item">
-        <div class="roteiro-num">04</div>
-        <div class="roteiro-title">Resultados</div>
-        <div class="roteiro-desc">LSTM vs BiLSTM vs LSTM-XGBoost. 94,24% — o que significa.</div>
-        <div class="roteiro-time">4 min</div>
+      <div class="agenda-item">
+        <span class="num">04</span>
+        <span class="title">Resultados</span>
+        <span class="desc">LSTM vs BiLSTM vs LSTM-XGBoost. 94,24% — o que significa.</span>
+        <span class="time">5 min</span>
       </div>
-      <div class="roteiro-item">
-        <div class="roteiro-num" style="color:var(--accent2)">05</div>
-        <div class="roteiro-title">Atenção</div>
-        <div class="roteiro-desc">Três pontos que merecem aprofundamento em trabalhos futuros.</div>
-        <div class="roteiro-time">3 min</div>
+      <div class="agenda-item">
+        <span class="num">05</span>
+        <span class="title">Atenção</span>
+        <span class="desc">Contadores PM (G.798 §9) como features preditivas — o que está faltando no modelo.</span>
+        <span class="time">2 min</span>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S3: MOTIVAÇÃO ══ -->
-  <div class="slide" id="s3">
-    <div class="slide-label">// 01 — motivação</div>
-    <div class="slide-header">
-      <h2 class="slide-title">Por que<br><em>IA + OTN?</em></h2>
-    </div>
-    <div class="grid-2" style="align-items:start">
-      <div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:0.08em;text-transform:uppercase">Cascata a partir de um único dLOS</div>
-
-        <div style="border:1px solid var(--border);padding:12px 16px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2.1;margin-bottom:6px">
-          <div style="color:var(--accent2);font-size:10px;margin-bottom:4px">— fixo (independe de N) —</div>
-          1× dLOS &nbsp;+&nbsp; 1× dLOF &nbsp;+&nbsp; 1× OTU-AIS &nbsp;+&nbsp; 1× OTU-BDI
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-          <div style="border:1px solid var(--border);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2">
-            <div style="color:var(--accent2);font-size:10px;margin-bottom:4px">N = 1 &nbsp;(sem agregador)</div>
-            1× ODU-AIS + 1× ODU-BDI<br>
-            1×6× TCMi-AIS + 1×6× TCMi-BDI<br>
-            1× Client-AIS<br>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Total: <strong style="color:var(--text)">19 defeitos</strong></div>
-          </div>
-          <div style="border:1px solid var(--accent);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:2">
-            <div style="color:var(--accent);font-size:10px;margin-bottom:4px">N ≥ 2 &nbsp;(+ agregador ODU)</div>
-            (N+1)× ODU-AIS + (N+1)× ODU-BDI<br>
-            (N+1)×6× TCMi-AIS + (N+1)×6× TCMi-BDI<br>
-            N× Client-AIS<br>
-            <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">N=2 → <strong style="color:var(--text)">48</strong> &nbsp;·&nbsp; N=4 → <strong style="color:var(--text)">78 defeitos</strong></div>
-          </div>
-        </div>
+<!-- ════════════════════════════════════════════
+     SLIDE 3 — MOTIVATION
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 01 — motivação</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">3 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>Por que <em>IA + OTN?</em></h2>
+    <div class="cascade-grid">
+      <div class="cascade-box">
+        <div class="box-label">Cascata a partir de um único dLOS</div>
+        <div class="fixed-note">— fixo (independe de N) —</div>
+        <div class="formula">1× <span class="kw">dLOS</span>  +  1× dLOF  +  1× OTU-AIS  +  1× OTU-BDI</div>
+        <div class="fixed-note" style="margin-top:12px;">N = 1 (sem agregador)</div>
+        <div class="formula">1× ODU-AIS + 1× ODU-BDI<br>1×6× TCMi-AIS + 1×6× TCMi-BDI<br>1× Client-AIS</div>
+        <div class="total">Total: 19 defeitos</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:3px">
-        <div class="card">
-          <div class="card-accent"></div>
-          <div class="card-label">O desafio</div>
-          <div class="card-body">Redes DWDM modernas operam centenas de λ simultâneos. Um único dLOS gera cascata de defeitos em múltiplas camadas em milissegundos — gestão manual é inviável com SLA de 99,999%.</div>
-        </div>
-        <div class="card">
-          <div class="card-accent orange"></div>
-          <div class="card-label">Este artigo</div>
-          <div class="card-body">Um dos primeiros trabalhos a aplicar <strong>deep learning</strong> especificamente para predição de alarmes em redes OTN — comparando três arquiteturas com dados reais e balanceamento SMOTE.</div>
-        </div>
+      <div class="cascade-box">
+        <div class="box-label">N ≥ 2 (+ agregador ODU)</div>
+        <div class="formula">(N+1)× ODU-AIS + (N+1)× ODU-BDI<br>(N+1)×6× TCMi-AIS + (N+1)×6× TCMi-BDI<br>N× Client-AIS</div>
+        <div class="sizes" style="margin-top:16px;">N=2 → <strong style="color:var(--amber)">48</strong> &nbsp;·&nbsp; N=4 → <strong style="color:var(--red)">78 defeitos</strong></div>
+      </div>
+    </div>
+    <div class="callout-row">
+      <div class="callout">
+        <strong>O desafio</strong><br>
+        Redes DWDM modernas operam centenas de λ simultâneos. Um único dLOS gera cascata de defeitos em múltiplas camadas em milissegundos — gestão manual é inviável com SLA de 99,999%.
+      </div>
+      <div class="callout">
+        <strong>Este artigo</strong><br>
+        Um dos primeiros trabalhos a aplicar <strong>deep learning</strong> especificamente para predição de alarmes em redes OTN — comparando três arquiteturas com dados reais e balanceamento SMOTE.
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S4: DEFEITOS OTN ══ -->
-  <div class="slide" id="s4">
-    <div class="slide-label">// 02 — contexto OTN · G.798</div>
-    <div class="slide-header" style="margin-bottom:16px">
-      <h2 class="slide-title">Defeitos OTN<br><em>por camada.</em></h2>
+<!-- ════════════════════════════════════════════
+     SLIDE 4 — OTN LAYERS
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 02 — contexto OTN · G.798</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">4 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>Defeitos OTN <em>por camada.</em></h2>
+    <div class="layer-stack">
+      <div class="layer">
+        <div class="layer-name">OTS / OMS</div>
+        <div class="layer-defects">dLOS &nbsp;&nbsp;<span class="layer-note">— Camada óptica — defeitos primários de origem</span></div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">OTU</div>
+        <div class="layer-defects">dLOF &nbsp; dLOM &nbsp; dLOFLOM &nbsp; dBDI &nbsp; dDEG &nbsp; dTIM &nbsp; dIAE &nbsp; dBIAE &nbsp; dMSIM<br>
+        <span class="layer-note">Enquadramento + FEC — inclui tributários OTUCn</span></div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">ODU</div>
+        <div class="layer-defects">dAIS &nbsp; dOCI &nbsp; dLCK &nbsp; dBDI &nbsp; dDEG &nbsp; dTIM &nbsp; dPLM &nbsp; dCSF &nbsp; dLOFLOM &nbsp; dMSIM<br>
+        <span class="layer-note">Camada de serviço — conexão e payload</span></div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">TCM 1…6</div>
+        <div class="layer-defects">dAIS &nbsp; dOCI &nbsp; dLCK &nbsp; dBDI &nbsp; dDEG &nbsp; dTIM &nbsp; dLTC<br>
+        <span class="layer-note">Monitoração tandem — até 6 níveis por ODU</span></div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">OPU / Cliente</div>
+        <div class="layer-defects">dPLM &nbsp; dCSF &nbsp; dSSF &nbsp; dGFP-LOS &nbsp; dGFP-dFDI<br>
+        <span class="layer-note">SDH / Ethernet / FC — impacto no serviço</span></div>
+      </div>
     </div>
-    <div class="layer-table">
-      <div class="layer-row">
-        <div class="layer-name" style="background:#2d0f0f;color:#ff6b6b">OTS / OMS</div>
-        <div class="layer-defects">dLOS</div>
-        <div class="layer-note">Camada óptica — defeitos primários de origem</div>
+    <p class="footnote">Nota: prefixo d = defeito detectado (condição técnica). Alarme = notificação gerada a partir do defeito.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 5 — PM COUNTERS
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 02 — contadores PM · G.798 §9</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">5 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>A degradação <em>antes do defeito.</em></h2>
+    <div class="timeline-row">
+      <div class="tl-item">
+        <div class="tl-badge">BIP-8↑</div>
+        <div class="tl-label">erros de bit crescendo</div>
+        <div class="tl-time">t − 30min</div>
       </div>
-      <div class="layer-row">
-        <div class="layer-name" style="background:#2d1f0a;color:#ffaa44">OTU</div>
-        <div class="layer-defects">dLOF &nbsp; dLOM &nbsp; dLOFLOM &nbsp; dBDI &nbsp; dDEG &nbsp; dTIM &nbsp; dIAE &nbsp; dBIAE &nbsp; dMSIM</div>
-        <div class="layer-note">Enquadramento + FEC — inclui tributários OTUCn</div>
+      <div class="tl-item">
+        <div class="tl-badge">ES↑</div>
+        <div class="tl-label">Errored Seconds</div>
+        <div class="tl-time">t − 15min</div>
       </div>
-      <div class="layer-row">
-        <div class="layer-name" style="background:#0a1229;color:#6699ff">ODU</div>
-        <div class="layer-defects">dAIS &nbsp; dOCI &nbsp; dLCK &nbsp; dBDI &nbsp; dDEG &nbsp; dTIM &nbsp; dPLM &nbsp; dCSF &nbsp; dLOFLOM &nbsp; dMSIM</div>
-        <div class="layer-note">Camada de serviço — conexão e payload</div>
+      <div class="tl-item">
+        <div class="tl-badge">SES↑</div>
+        <div class="tl-label">Severely Errored Seconds</div>
+        <div class="tl-time">t − 5min</div>
       </div>
-      <div class="layer-row">
-        <div class="layer-name" style="background:#0a2020;color:#44ddcc">TCM 1…6</div>
-        <div class="layer-defects">dAIS &nbsp; dOCI &nbsp; dLCK &nbsp; dBDI &nbsp; dDEG &nbsp; dTIM &nbsp; dLTC</div>
-        <div class="layer-note">Monitoração tandem — até 6 níveis por ODU</div>
-      </div>
-      <div class="layer-row">
-        <div class="layer-name" style="background:#1a0a2a;color:#aa88ff">OPU / Cliente</div>
-        <div class="layer-defects">dPLM &nbsp; dCSF &nbsp; dSSF &nbsp; dGFP-LOS &nbsp; dGFP-dFDI</div>
-        <div class="layer-note">SDH / Ethernet / FC — impacto no serviço</div>
+      <div class="tl-item">
+        <div class="tl-badge red">dLOS</div>
+        <div class="tl-label">defeito — já é tarde</div>
+        <div class="tl-time">t = 0</div>
       </div>
     </div>
-    <div style="margin-top:10px;font-size:10px;color:var(--muted);letter-spacing:0.06em">
-      <span style="color:var(--accent2)">Nota:</span> prefixo <span style="color:var(--accent);font-family:var(--mono)">d</span> = defeito detectado (condição técnica). Alarme = notificação gerada a partir do defeito.
+    <table class="pm-table">
+      <thead>
+        <tr>
+          <th>Contador</th><th>Definição G.798</th><th>Janelas</th><th>Camadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>BIP-8 / BEI</td><td>Erros de bit por frame OTN</td><td>Contínuo + 15min + 24h</td><td>OTU / ODU / TCMi</td></tr>
+        <tr><td>ES</td><td>Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
+        <tr><td>SES</td><td>Severely Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
+        <tr><td>UAS</td><td>Unavailable Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
+        <tr><td>BBE</td><td>Background Block Errors</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
+        <tr><td>FEC corr.</td><td>Erros corrigidos pelo FEC — <strong>mais preditivo</strong>: enlace queima margem silenciosamente antes de qualquer BER visível</td><td>Contínuo</td><td>OTU</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">Métricas primitivas (BIP-8, BEI) definidas na <strong>G.798</strong>. A disponibilização via interfaces de gerência depende da <strong>G.7710</strong>. São a "temperatura" da rede antes da "febre" do defeito — e estão ausentes do artigo.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 6 — ARTICLE SCOPE (sem "observado na leitura")
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 03 — o artigo</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">6 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>Objetivo e <em>escopo.</em></h2>
+    <div class="central-prop">
+      <div class="cp-label">Proposta central</div>
+      <p>Usar redes LSTM para <strong>prever alarmes em redes OTN baseadas em DWDM</strong>, criando um sistema de manutenção preditiva que antecipe falhas antes que afetem o serviço — comparando três arquiteturas de deep learning.</p>
+    </div>
+    <div class="scope-box" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:24px;">
+      <div class="scope-title">// escopo declarado</div>
+      <div class="scope-item"><span class="icon">✓</span> Redes OTN / DWDM — cenário operacional real</div>
+      <div class="scope-item"><span class="icon">✓</span> Comparação de 3 arquiteturas de deep learning</div>
+      <div class="scope-item"><span class="icon">✓</span> Balanceamento de classes com SMOTE</div>
+      <div class="scope-item"><span class="icon">✓</span> Dataset com componente de dados reais</div>
+      <div class="scope-item"><span class="icon">✓</span> Sistema de manutenção preditiva inteligente</div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S5: CONTADORES PM ══ -->
-  <div class="slide" id="s5">
-    <div class="slide-label">// 02 — contadores PM · G.798 §9</div>
-    <div class="slide-header" style="margin-bottom:16px">
-      <h2 class="slide-title">A degradação<br><em>antes do defeito.</em></h2>
-    </div>
-    <div class="grid-2">
-      <div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:16px;letter-spacing:0.06em">LINHA DO TEMPO — ANTES DE UM dLOS</div>
-        <div class="timeline" style="height:160px;position:relative">
-          <div class="tl-line"></div>
-          <div class="tl-item">
-            <div class="tl-bar-wrap"><div class="tl-bar" style="height:30px;border-color:#3a7bd5;background:rgba(58,123,213,0.15)"></div></div>
-            <div class="tl-label-top" style="color:#3a7bd5">BIP-8↑</div>
-            <div class="tl-desc">erros de bit crescendo</div>
-            <div class="tl-time">t − 30min</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-bar-wrap"><div class="tl-bar" style="height:70px;border-color:#d97706;background:rgba(217,119,6,0.15)"></div></div>
-            <div class="tl-label-top" style="color:#d97706">ES↑</div>
-            <div class="tl-desc">Errored Seconds</div>
-            <div class="tl-time">t − 15min</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-bar-wrap"><div class="tl-bar" style="height:100px;border-color:#d35400;background:rgba(211,84,0,0.15)"></div></div>
-            <div class="tl-label-top" style="color:#d35400">SES↑</div>
-            <div class="tl-desc">Severely Errored Seconds</div>
-            <div class="tl-time">t − 5min</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-bar-wrap"><div class="tl-bar" style="height:130px;border-color:#c0392b;background:rgba(192,57,43,0.2)"></div></div>
-            <div class="tl-label-top" style="color:#c0392b">dLOS</div>
-            <div class="tl-desc">defeito — já é tarde</div>
-            <div class="tl-time">t = 0</div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <table class="pm-table">
-          <thead>
-            <tr>
-              <th>Contador</th>
-              <th>Definição G.798</th>
-              <th>Janelas</th>
-              <th>Camadas</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>BIP-8 / BEI</td><td>Erros de bit por frame OTN</td><td>Contínuo + 15min + 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td>ES</td><td>Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td>SES</td><td>Severely Errored Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td>UAS</td><td>Unavailable Seconds</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td>BBE</td><td>Background Block Errors</td><td>15min / 24h</td><td>OTU / ODU / TCMi</td></tr>
-            <tr><td style="color:var(--accent)">FEC corr.</td><td>Erros corrigidos pelo FEC — <strong>mais preditivo</strong>: enlace queima margem silenciosamente antes de qualquer BER visível</td><td>Contínuo</td><td>OTU</td></tr>
-          </tbody>
-        </table>
-        <div style="margin-top:14px;font-size:11px;color:var(--muted);border:1px solid var(--border);padding:12px 16px">
-          Métricas primitivas (BIP-8, BEI) definidas na <strong style="color:var(--text)">G.798</strong>. A disponibilização via interfaces de gerência — para coleta e análise — depende da <strong style="color:var(--text)">G.7710</strong>. São a "temperatura" da rede antes da "febre" do defeito — e estão ausentes do artigo.
-        </div>
-      </div>
-    </div>
+<!-- ════════════════════════════════════════════
+     SLIDE 7 — SMOTE
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 03 — dataset e balanceamento</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">7 / 14</span>
   </div>
-
-  <!-- ══ S6: O ARTIGO ══ -->
-  <div class="slide" id="s6">
-    <div class="slide-label">// 03 — o artigo</div>
-    <div class="slide-header">
-      <h2 class="slide-title">Objetivo e<br><em>escopo.</em></h2>
-    </div>
-    <div style="border:1px solid var(--border);padding:16px 20px;margin-bottom:16px;background:var(--surface)">
-      <span style="font-size:10px;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase">Proposta central</span>
-      <p style="margin-top:8px;font-size:13px;line-height:1.8;color:var(--muted)">Usar redes LSTM para <strong style="color:var(--text)">prever alarmes em redes OTN baseadas em DWDM</strong>, criando um sistema de manutenção preditiva que antecipe falhas antes que afetem o serviço — comparando três arquiteturas de deep learning.</p>
-    </div>
-    <div class="compare-wrap" style="flex:1">
-      <div class="compare-col">
-        <div class="compare-head green">// escopo declarado</div>
-        <div class="compare-body">
-          <div class="compare-item"><span class="compare-icon">✓</span><span>Redes OTN / DWDM — cenário operacional real</span></div>
-          <div class="compare-item"><span class="compare-icon">✓</span><span>Comparação de 3 arquiteturas de deep learning</span></div>
-          <div class="compare-item"><span class="compare-icon">✓</span><span>Balanceamento de classes com SMOTE</span></div>
-          <div class="compare-item"><span class="compare-icon">✓</span><span>Dataset com componente de dados reais</span></div>
-          <div class="compare-item"><span class="compare-icon">✓</span><span>Sistema de manutenção preditiva inteligente</span></div>
-        </div>
-      </div>
-      <div class="compare-col">
-        <div class="compare-head muted">// observado na leitura</div>
-        <div class="compare-body">
-          <div class="compare-item"><span class="compare-icon muted">→</span><span>Foco em enlace ponto-a-ponto sem regeneração</span></div>
-          <div class="compare-item"><span class="compare-icon muted">→</span><span>Ênfase em dLOS e dLOF — camadas OTS/OTU</span></div>
-          <div class="compare-item"><span class="compare-icon muted">→</span><span>Alarmes codificados como labels temporais</span></div>
-          <div class="compare-item"><span class="compare-icon muted">→</span><span>Horizonte de predição não definido explicitamente</span></div>
-          <div class="compare-item"><span class="compare-icon muted">→</span><span>Proporção original de classes não documentada</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ S7: DATASET E SMOTE ══ -->
-  <div class="slide" id="s7">
-    <div class="slide-label">// 03 — dataset e balanceamento</div>
-    <div class="slide-header" style="margin-bottom:16px">
-      <h2 class="slide-title">O desafio do<br><em>desbalanceamento.</em></h2>
-    </div>
-    <div class="smote-wrap" style="margin-bottom:16px">
-      <div class="smote-col">
-        <div class="smote-head">Distribuição real (estimada)<br><strong>Antes do SMOTE</strong></div>
+  <div class="slide-body">
+    <h2>O desafio do <em>desbalanceamento.</em></h2>
+    <div class="smote-grid">
+      <div class="smote-box">
+        <div class="sb-label">Distribuição real (estimada)<br><strong style="color:var(--text)">Antes do SMOTE</strong></div>
         <div class="bar-row">
-          <div class="bar-label">NORMAL</div>
-          <div class="bar-track"><div class="bar-fill" style="width:95%;background:#2a2a2a" id="bar-normal-before"></div></div>
-          <div class="bar-pct" style="color:var(--muted)">~95%</div>
+          <div class="bar-item">
+            <div class="bar-label"><span class="bname">NORMAL</span><span class="bpct">~95%</span></div>
+            <div class="bar-track"><div class="bar-fill normal" style="width:95%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label"><span class="bname">DEFEITO</span><span class="bpct">~5%</span></div>
+            <div class="bar-track"><div class="bar-fill defect" style="width:5%"></div></div>
+          </div>
         </div>
+        <div class="smote-note">O modelo tenderia a classificar tudo como "normal" — acertaria 95% sem aprender nada.</div>
+      </div>
+      <div class="smote-box">
+        <div class="sb-label">Dataset de treinamento<br><strong style="color:var(--text)">Após o SMOTE</strong></div>
         <div class="bar-row">
-          <div class="bar-label">DEFEITO</div>
-          <div class="bar-track"><div class="bar-fill" style="width:5%;background:#c0392b" id="bar-alarm-before"></div></div>
-          <div class="bar-pct" style="color:#c0392b">~5%</div>
+          <div class="bar-item">
+            <div class="bar-label"><span class="bname">NORMAL</span><span class="bpct">50%</span></div>
+            <div class="bar-track"><div class="bar-fill normal" style="width:50%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label"><span class="bname">DEFEITO</span><span class="bpct">50%</span></div>
+            <div class="bar-track"><div class="bar-fill defect" style="width:50%"></div></div>
+          </div>
         </div>
-        <div style="margin-top:14px;font-size:11px;color:var(--muted)">O modelo tenderia a classificar tudo como "normal" — acertaria 95% sem aprender nada.</div>
+        <div class="smote-note">O SMOTE gera amostras sintéticas da classe minoritária por interpolação entre exemplos reais.</div>
       </div>
-      <div class="smote-col">
-        <div class="smote-head">Dataset de treinamento<br><strong>Após o SMOTE</strong></div>
-        <div class="bar-row">
-          <div class="bar-label">NORMAL</div>
-          <div class="bar-track"><div class="bar-fill" style="width:50%;background:#2a2a2a"></div></div>
-          <div class="bar-pct" style="color:var(--muted)">50%</div>
-        </div>
-        <div class="bar-row">
-          <div class="bar-label">DEFEITO</div>
-          <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--accent)"></div></div>
-          <div class="bar-pct" style="color:var(--accent)">50%</div>
-        </div>
-        <div style="margin-top:14px;font-size:11px;color:var(--muted)">O SMOTE gera amostras sintéticas da classe minoritária por interpolação entre exemplos reais.</div>
-      </div>
-    </div>
-    <div style="font-size:10px;color:var(--muted);letter-spacing:0.06em;margin-bottom:10px">PIPELINE DO ARTIGO</div>
-    <div class="pipeline">
-      <div class="pipe-step"><div class="pipe-step-num">01</div><div class="pipe-step-name">Log de Alarmes</div></div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step"><div class="pipe-step-num">02</div><div class="pipe-step-name">Feature Encoding</div></div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step active-step"><div class="pipe-step-num">03</div><div class="pipe-step-name">SMOTE</div></div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step"><div class="pipe-step-num">04</div><div class="pipe-step-name">Treino LSTM / XGB</div></div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step"><div class="pipe-step-num">05</div><div class="pipe-step-name">Avaliação de Métricas</div></div>
-    </div>
-  </div>
-
-  <!-- ══ S8: ARQUITETURAS ══ -->
-  <div class="slide" id="s8">
-    <div class="slide-label">// 04 — modelos comparados</div>
-    <div class="slide-header" style="margin-bottom:20px">
-      <h2 class="slide-title">Três arquiteturas<br><em>em competição.</em></h2>
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column;gap:3px">
-      <div class="model-row">
-        <div class="model-tag" style="color:var(--muted)">LSTM</div>
-        <div class="model-body">
-          <div class="model-name">Long Short-Term Memory</div>
-          <div class="model-desc">Rede recorrente com memória seletiva <strong>unidirecional</strong>. Gates de entrada, esquecimento e saída controlam o que é retido ao longo da sequência. Aprende: "depois deste padrão de defeitos, o próximo tende a ser X".</div>
-        </div>
-        <div class="model-result">
-          <div><div class="model-result-val" style="color:var(--muted);font-size:16px">~88%</div><div class="model-result-sub">acurácia</div><div class="model-result-val" style="color:var(--muted);font-size:14px;margin-top:4px">F1 ~0,82</div><div class="model-result-sub">(estimado)</div></div>
-        </div>
-      </div>
-      <div class="model-row">
-        <div class="model-tag" style="color:#6699ff">Bi<br>LSTM</div>
-        <div class="model-body">
-          <div class="model-name">Bidirectional LSTM</div>
-          <div class="model-desc">Processa a sequência nos <strong>dois sentidos simultaneamente</strong>: uma LSTM no sentido passado→futuro e outra no sentido futuro→passado. As duas saídas são concatenadas, capturando contexto bidirecional de cada evento.</div>
-        </div>
-        <div class="model-result">
-          <div><div class="model-result-val" style="color:#6699ff;font-size:16px">~91%</div><div class="model-result-sub">acurácia</div><div class="model-result-val" style="color:#6699ff;font-size:14px;margin-top:4px">F1 ~0,87</div><div class="model-result-sub">(estimado)</div></div>
-        </div>
-      </div>
-      <div class="model-row" style="border-color:#2a2a2a">
-        <div class="model-tag" style="color:var(--accent)">LSTM<br>XGB</div>
-        <div class="model-body">
-          <div class="model-name">LSTM-XGBoost Híbrido <span style="color:var(--accent);font-size:11px">★ melhor</span></div>
-          <div class="model-desc">LSTM extrai <strong>representações temporais</strong> das sequências; essas features são passadas ao XGBoost para classificação final com gradient boosting. Combina o poder temporal da LSTM com a robustez do XGBoost.</div>
-        </div>
-        <div class="model-result" style="border-left-color:var(--accent)">
-          <div>
-            <div class="model-result-val" style="color:var(--accent)">94,24%</div>
-            <div class="model-result-sub">acurácia</div>
-            <div class="model-result-val" style="color:var(--accent);font-size:18px;margin-top:4px">F1 = 0,91</div>
+      <div class="smote-box">
+        <div class="sb-label">PIPELINE DO ARTIGO</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;">
+              <div style="font-size:10px;color:var(--accent);font-weight:700;">01</div>
+              <div style="color:var(--text);">Log de Alarmes</div>
+            </div>
+            <span style="color:var(--text-muted);">→</span>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;">
+              <div style="font-size:10px;color:var(--accent);font-weight:700;">02</div>
+              <div style="color:var(--text);">Feature Encoding</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--text-muted);padding-left:4px;">↓</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;">
+              <div style="font-size:10px;color:var(--accent);font-weight:700;">03</div>
+              <div style="color:var(--text);">SMOTE</div>
+            </div>
+            <span style="color:var(--text-muted);">→</span>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;">
+              <div style="font-size:10px;color:var(--accent);font-weight:700;">04</div>
+              <div style="color:var(--text);">Treino LSTM / XGB</div>
+            </div>
+            <span style="color:var(--text-muted);">→</span>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;">
+              <div style="font-size:10px;color:var(--accent);font-weight:700;">05</div>
+              <div style="color:var(--text);">Avaliação de Métricas</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S9: RESULTADOS ══ -->
-  <div class="slide" id="s9">
-    <div class="slide-label">// 04 — resultados</div>
-    <div class="slide-header" style="margin-bottom:16px">
-      <h2 class="slide-title">O que os números<br><em>dizem.</em></h2>
-    </div>
-    <div class="result-hero">
-      <div class="result-box">
-        <div class="result-label">Acurácia · LSTM-XGBoost</div>
-        <div class="result-value">94,24%</div>
-      </div>
-      <div class="result-box">
-        <div class="result-label">F1-Score · LSTM-XGBoost</div>
-        <div class="result-value orange">0,91</div>
-      </div>
-      <div class="result-box">
-        <div class="result-label">Modelos comparados</div>
-        <div class="result-value" style="color:var(--text)">3</div>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:3px;flex:1">
-      <div style="border:1px solid var(--border);padding:14px 20px;display:flex;gap:16px;align-items:flex-start">
-        <span style="color:var(--accent);flex-shrink:0">→</span>
-        <span style="font-size:12px;color:var(--muted);line-height:1.8"><strong style="color:var(--text)">LSTM-XGBoost vence BiLSTM</strong> — a combinação de extração temporal com gradient boosting captura melhor as dependências nos logs de defeitos do que o LSTM bidirecional puro.</span>
-      </div>
-      <div style="border:1px solid var(--border);padding:14px 20px;display:flex;gap:16px;align-items:flex-start">
-        <span style="color:var(--accent);flex-shrink:0">→</span>
-        <span style="font-size:12px;color:var(--muted);line-height:1.8"><strong style="color:var(--text)">Divisão de responsabilidades</strong> — LSTM especialista em capturar dependências temporais longas; XGBoost especialista em classificação robusta. Juntos fazem o que cada um faz melhor.</span>
-      </div>
-      <div style="border:1px solid var(--border);padding:14px 20px;display:flex;gap:16px;align-items:flex-start">
-        <span style="color:var(--accent);flex-shrink:0">→</span>
-        <span style="font-size:12px;color:var(--muted);line-height:1.8"><strong style="color:var(--text)">Regularização natural</strong> — XGBoost aplica L1/L2 no estágio de classificação, reduzindo overfitting que poderia ocorrer com LSTM puro em datasets menores como este.</span>
-      </div>
-      <div style="border:1px solid var(--border);padding:14px 20px;display:flex;gap:16px;align-items:flex-start">
-        <span style="color:var(--accent);flex-shrink:0">→</span>
-        <span style="font-size:12px;color:var(--muted);line-height:1.8"><strong style="color:var(--text)">Interpretabilidade parcial</strong> — XGBoost permite verificar a importância de cada feature extraída pelo LSTM, indicando o que contribui mais para cada tipo de predição.</span>
-      </div>
-    </div>
+<!-- ════════════════════════════════════════════
+     SLIDE 8 — MODELS
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 04 — modelos comparados</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">8 / 14</span>
   </div>
-
-  <!-- ══ S10: POR QUE HÍBRIDO VENCE ══ -->
-  <div class="slide" id="s10">
-    <div class="slide-label">// 04 — por que o híbrido vence</div>
-    <div class="slide-header" style="margin-bottom:16px">
-      <h2 class="slide-title">A combinação que<br><em>supera os componentes.</em></h2>
-    </div>
-    <div class="hybrid-flow" style="margin-bottom:20px">
-      <div class="hf-step"><div class="hf-step-name" style="color:var(--muted)">Sequência</div><div class="hf-step-desc">Log de alarmes OTN</div></div>
-      <div class="hf-arrow">→</div>
-      <div class="hf-step" style="border-color:#1a52a8"><div class="hf-step-name" style="color:#6699ff">LSTM Encoder</div><div class="hf-step-desc">Dependências temporais</div></div>
-      <div class="hf-arrow">→</div>
-      <div class="hf-step"><div class="hf-step-name" style="color:var(--muted)">Feature Vector</div><div class="hf-step-desc">Representação compacta</div></div>
-      <div class="hf-arrow">→</div>
-      <div class="hf-step" style="border-color:#d97706"><div class="hf-step-name" style="color:#d97706">XGBoost</div><div class="hf-step-desc">Classificação robusta</div></div>
-      <div class="hf-arrow">→</div>
-      <div class="hf-step" style="border-color:var(--accent)"><div class="hf-step-name" style="color:var(--accent)">Predição</div><div class="hf-step-desc">Tipo + probabilidade</div></div>
-    </div>
-    <div class="reason-list">
-      <div class="reason-item"><div class="reason-num">01</div><div class="reason-body"><strong>Divisão de responsabilidades</strong> — LSTM faz o que LSTM faz melhor (memória temporal); XGBoost faz o que XGBoost faz melhor (classificação com features estruturadas). A arquitetura respeita os pontos fortes de cada componente.</div></div>
-      <div class="reason-item"><div class="reason-num">02</div><div class="reason-body"><strong>Regularização no estágio de classificação</strong> — XGBoost aplica L1/L2 automaticamente, reduzindo risco de overfitting que é comum quando LSTM puro é usado em datasets de tamanho moderado.</div></div>
-      <div class="reason-item"><div class="reason-num">03</div><div class="reason-body"><strong>Benchmark replicável</strong> — o resultado empírico de que modelos híbridos LSTM+tree superam arquiteturas puras para sequências de alarmes é um achado relevante, abrindo caminho para variações como LSTM+LightGBM ou LSTM+CatBoost.</div></div>
-    </div>
-  </div>
-
-  <!-- ══ S11: IMPACTO SMOTE ══ -->
-  <div class="slide" id="s11">
-    <div class="slide-label">// 04 — impacto do SMOTE</div>
-    <div class="slide-header" style="margin-bottom:16px">
-      <h2 class="slide-title">SMOTE — por que<br><em>faz diferença.</em></h2>
-    </div>
-    <div class="grid-2" style="align-items:start;gap:16px">
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div class="card">
-          <div class="card-accent"></div>
-          <div class="card-label">O que é SMOTE</div>
-          <div class="card-body"><strong>Synthetic Minority Over-sampling Technique</strong> gera amostras sintéticas da classe minoritária por interpolação linear entre exemplos reais existentes. Para cada amostra de defeito real, cria vizinhos artificiais no espaço de features.</div>
-        </div>
-        <div class="card">
-          <div class="card-accent orange"></div>
-          <div class="card-label">Por que é necessário</div>
-          <div class="card-body">Sem balanceamento, modelos de ML são enviesados para a classe majoritária. Em redes OTN bem operadas, defeitos críticos são raros — exatamente os eventos mais importantes de detectar. SMOTE força o modelo a aprender essas fronteiras de decisão.</div>
+  <div class="slide-body">
+    <h2>Três arquiteturas <em>em competição.</em></h2>
+    <div class="models-grid">
+      <div class="model-card">
+        <div class="mc-name">LSTM</div>
+        <div class="mc-full">Long Short-Term Memory</div>
+        <div class="mc-desc">Rede recorrente com memória seletiva <strong>unidirecional</strong>. Gates de entrada, esquecimento e saída controlam o que é retido ao longo da sequência. Aprende: "depois deste padrão de defeitos, o próximo tende a ser X".</div>
+        <div class="mc-metrics">
+          <div class="metric-pill"><span class="mp-val">~88%</span><span class="mp-label">acurácia</span></div>
+          <div class="metric-pill"><span class="mp-val">F1 ~0,82</span><span class="mp-label">(estimado)</span></div>
         </div>
       </div>
-      <div>
-        <div style="border:1px solid var(--border);padding:20px;background:var(--surface)">
-          <div style="font-size:10px;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px">Resultado com SMOTE</div>
-          <div style="font-family:var(--sans);font-weight:800;font-size:48px;letter-spacing:-0.04em;color:var(--accent);line-height:1">94,24%</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px">acurácia · LSTM-XGBoost</div>
-          <div style="font-family:var(--sans);font-weight:800;font-size:32px;letter-spacing:-0.04em;color:var(--accent2);line-height:1;margin-top:16px">F1 = 0,91</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px">F1-Score agregado</div>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.7">
-            O balanceamento permitiu que o modelo aprendesse a reconhecer defeitos raros com eficácia significativamente maior do que seria possível com o dataset desbalanceado original.
-          </div>
+      <div class="model-card">
+        <div class="mc-name">BiLSTM</div>
+        <div class="mc-full">Bidirectional LSTM</div>
+        <div class="mc-desc">Processa a sequência nos <strong>dois sentidos simultaneamente</strong>: uma LSTM no sentido passado→futuro e outra no sentido futuro→passado. As duas saídas são concatenadas, capturando contexto bidirecional de cada evento.</div>
+        <div class="mc-metrics">
+          <div class="metric-pill"><span class="mp-val">~91%</span><span class="mp-label">acurácia</span></div>
+          <div class="metric-pill"><span class="mp-val">F1 ~0,87</span><span class="mp-label">(estimado)</span></div>
+        </div>
+      </div>
+      <div class="model-card best">
+        <div class="mc-name">LSTM-XGB</div>
+        <div class="mc-full">LSTM-XGBoost Híbrido ★ melhor</div>
+        <div class="mc-desc">LSTM extrai <strong>representações temporais</strong> das sequências; essas features são passadas ao XGBoost para classificação final com gradient boosting. Combina o poder temporal da LSTM com a robustez do XGBoost.</div>
+        <div class="mc-metrics">
+          <div class="metric-pill best-metric"><span class="mp-val">94,24%</span><span class="mp-label">acurácia</span></div>
+          <div class="metric-pill best-metric"><span class="mp-val">F1 = 0,91</span><span class="mp-label"></span></div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S12: CONTRIBUIÇÕES ══ -->
-  <div class="slide" id="s12">
-    <div class="slide-label">// 04 — contribuições</div>
-    <div class="slide-header" style="margin-bottom:20px">
-      <h2 class="slide-title">O que o artigo<br><em>efetivamente avança.</em></h2>
+<!-- ════════════════════════════════════════════
+     SLIDE 9 — RESULTS
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 04 — resultados</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">9 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>O que os números <em>dizem.</em></h2>
+    <div class="results-top">
+      <div class="stat-card"><div class="sc-val">94,24%</div><div class="sc-label">Acurácia · LSTM-XGBoost</div></div>
+      <div class="stat-card"><div class="sc-val">0,91</div><div class="sc-label">F1-Score · LSTM-XGBoost</div></div>
+      <div class="stat-card"><div class="sc-val">3</div><div class="sc-label">Modelos comparados</div></div>
     </div>
-    <div class="contrib-list">
-      <div class="contrib-item">
-        <div class="contrib-num">01</div>
-        <div class="contrib-body">
-          <div class="contrib-title">Comparação sistemática de arquiteturas para OTN</div>
-          <div class="contrib-desc">Primeiro estudo a comparar LSTM, BiLSTM e LSTM-XGBoost especificamente para predição de alarmes em redes OTN — estabelece um benchmark replicável para trabalhos futuros.</div>
+    <div class="insights">
+      <div class="insight"><span class="arrow">→</span><p><strong>LSTM-XGBoost vence BiLSTM</strong> — a combinação de extração temporal com gradient boosting captura melhor as dependências nos logs de defeitos do que o LSTM bidirecional puro.</p></div>
+      <div class="insight"><span class="arrow">→</span><p><strong>Divisão de responsabilidades</strong> — LSTM especialista em capturar dependências temporais longas; XGBoost especialista em classificação robusta. Juntos fazem o que cada um faz melhor.</p></div>
+      <div class="insight"><span class="arrow">→</span><p><strong>Regularização natural</strong> — XGBoost aplica L1/L2 no estágio de classificação, reduzindo overfitting que poderia ocorrer com LSTM puro em datasets menores como este.</p></div>
+      <div class="insight"><span class="arrow">→</span><p><strong>Interpretabilidade parcial</strong> — XGBoost permite verificar a importância de cada feature extraída pelo LSTM, indicando o que contribui mais para cada tipo de predição.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 10 — HYBRID FLOW
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 04 — por que o híbrido vence</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">10 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>A combinação que <em>supera os componentes.</em></h2>
+    <div class="flow-row">
+      <div class="flow-node"><div class="fn-label">Sequência</div><div class="fn-name">Log de alarmes OTN</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-label">LSTM Encoder</div><div class="fn-name">Dependências temporais</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-label">Feature Vector</div><div class="fn-name">Representação compacta</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="fn-label">XGBoost</div><div class="fn-name">Classificação robusta</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="border-color:var(--accent);"><div class="fn-label">Predição</div><div class="fn-name" style="color:var(--green);">Tipo + probabilidade</div></div>
+    </div>
+    <div class="why-list">
+      <div class="why-item">
+        <div class="wi-num">01</div>
+        <p><strong>Divisão de responsabilidades</strong> — LSTM faz o que LSTM faz melhor (memória temporal); XGBoost faz o que XGBoost faz melhor (classificação com features estruturadas). A arquitetura respeita os pontos fortes de cada componente.</p>
+      </div>
+      <div class="why-item">
+        <div class="wi-num">02</div>
+        <p><strong>Regularização no estágio de classificação</strong> — XGBoost aplica L1/L2 automaticamente, reduzindo risco de overfitting que é comum quando LSTM puro é usado em datasets de tamanho moderado.</p>
+      </div>
+      <div class="why-item">
+        <div class="wi-num">03</div>
+        <p><strong>Benchmark replicável</strong> — o resultado empírico de que modelos híbridos LSTM+tree superam arquiteturas puras para sequências de alarmes é um achado relevante, abrindo caminho para variações como LSTM+LightGBM ou LSTM+CatBoost.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 11 — SMOTE IMPACT
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 04 — impacto do SMOTE</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">11 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>SMOTE — por que <em>faz diferença.</em></h2>
+    <div class="smote-impact">
+      <div class="si-box">
+        <div class="sib-title">O que é SMOTE</div>
+        <p><strong>Synthetic Minority Over-sampling Technique</strong> gera amostras sintéticas da classe minoritária por interpolação linear entre exemplos reais existentes. Para cada amostra de defeito real, cria vizinhos artificiais no espaço de features.</p>
+      </div>
+      <div class="si-box">
+        <div class="sib-title">Por que é necessário</div>
+        <p>Sem balanceamento, modelos de ML são enviesados para a classe majoritária. Em redes OTN bem operadas, defeitos críticos são raros — exatamente os eventos mais importantes de detectar. SMOTE força o modelo a aprender essas fronteiras de decisão.</p>
+      </div>
+      <div class="si-box">
+        <div class="sib-title">Resultado com SMOTE</div>
+        <div class="big-stat">94,24%</div>
+        <div class="big-stat-sub">acurácia · LSTM-XGBoost</div>
+        <div class="big-stat" style="margin-top:16px;">F1 = 0,91</div>
+        <div class="big-stat-sub">F1-Score agregado</div>
+        <p style="margin-top:12px;">O balanceamento permitiu que o modelo aprendesse a reconhecer defeitos raros com eficácia significativamente maior do que seria possível com o dataset desbalanceado original.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 12 — CONTRIBUTIONS
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 04 — contribuições</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">12 / 14</span>
+  </div>
+  <div class="slide-body">
+    <h2>O que o artigo <em>efetivamente avança.</em></h2>
+    <div class="contrib-grid">
+      <div class="contrib-card">
+        <div class="cc-num">01</div>
+        <div>
+          <div class="cc-title">Comparação sistemática de arquiteturas para OTN</div>
+          <div class="cc-desc">Primeiro estudo a comparar LSTM, BiLSTM e LSTM-XGBoost especificamente para predição de alarmes em redes OTN — estabelece um benchmark replicável para trabalhos futuros.</div>
         </div>
       </div>
-      <div class="contrib-item">
-        <div class="contrib-num">02</div>
-        <div class="contrib-body">
-          <div class="contrib-title">Aplicação de SMOTE para alarmes de telecomunicações</div>
-          <div class="contrib-desc">Demonstra a eficácia do balanceamento sintético para o problema específico de classes desbalanceadas em logs de defeitos de redes ópticas — metodologia transferível para outros domínios de telecom.</div>
+      <div class="contrib-card">
+        <div class="cc-num">02</div>
+        <div>
+          <div class="cc-title">Aplicação de SMOTE para alarmes de telecomunicações</div>
+          <div class="cc-desc">Demonstra a eficácia do balanceamento sintético para o problema específico de classes desbalanceadas em logs de defeitos de redes ópticas — metodologia transferível para outros domínios de telecom.</div>
         </div>
       </div>
-      <div class="contrib-item">
-        <div class="contrib-num">03</div>
-        <div class="contrib-body">
-          <div class="contrib-title">Validação com dados reais de rede operacional</div>
-          <div class="contrib-desc">A presença de dados reais (mesmo que parcial) diferencia o trabalho de simulações puras — aproxima os resultados de condições operacionais reais e fortalece a validade externa do experimento.</div>
+      <div class="contrib-card">
+        <div class="cc-num">03</div>
+        <div>
+          <div class="cc-title">Validação com dados reais de rede operacional</div>
+          <div class="cc-desc">A presença de dados reais (mesmo que parcial) diferencia o trabalho de simulações puras — aproxima os resultados de condições operacionais reais e fortalece a validade externa do experimento.</div>
         </div>
       </div>
-      <div class="contrib-item">
-        <div class="contrib-num">04</div>
-        <div class="contrib-body">
-          <div class="contrib-title">LSTM-XGBoost como arquitetura superior neste domínio</div>
-          <div class="contrib-desc">O resultado empírico de que modelos híbridos superam arquiteturas puras para sequências de alarmes é um achado relevante, abrindo caminho para variações e extensões futuras.</div>
+      <div class="contrib-card">
+        <div class="cc-num">04</div>
+        <div>
+          <div class="cc-title">LSTM-XGBoost como arquitetura superior neste domínio</div>
+          <div class="cc-desc">O resultado empírico de que modelos híbridos superam arquiteturas puras para sequências de alarmes é um achado relevante, abrindo caminho para variações e extensões futuras.</div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S13: PONTOS DE ATENÇÃO ══ -->
-  <div class="slide" id="s13">
-    <div class="slide-label">// 05 — pontos de atenção</div>
-    <div class="slide-header" style="margin-bottom:20px">
-      <h2 class="slide-title">O que merece<br><em>aprofundamento.</em></h2>
-    </div>
-    <div class="attention-list">
-      <div class="attention-item">
-        <div class="attention-letter">A</div>
-        <div class="attention-body">
-          <div class="attention-title">Métricas de avaliação — acurácia vs recall por classe</div>
-          <div class="attention-desc">O artigo reporta acurácia e F1 agregados. Para redes OTN reais, o recall específico em defeitos críticos (dLOS, dLOF) é a métrica operacionalmente relevante — um Falso Negativo significa queda de serviço sem aviso prévio.</div>
-          <div class="attention-ref">→ Oportunidade: publicar matriz de confusão por tipo de defeito</div>
-        </div>
-      </div>
-      <div class="attention-item">
-        <div class="attention-letter">B</div>
-        <div class="attention-body">
-          <div class="attention-title">Semântica dos defeitos OTN — hierarquia causal G.798</div>
-          <div class="attention-desc">Os defeitos tratados como labels independentes têm hierarquia causal explícita na G.798: dLOS gera dLOF que gera dAIS downstream. Codificar essa estrutura como conhecimento prévio poderia reduzir o ruído no dataset e melhorar a predição.</div>
-          <div class="attention-ref">→ Direção futura: grafo causal como pré-filtro do LSTM</div>
-        </div>
-      </div>
-      <div class="attention-item">
-        <div class="attention-letter">C</div>
-        <div class="attention-body">
-          <div class="attention-title">Contadores PM como features preditivas (G.798 §9)</div>
-          <div class="attention-desc">BIP-8, ES, SES, BBE e UAS registram degradação progressiva nas janelas de 15min e 24h — antes que qualquer defeito dispare. Incluir esses contadores poderia transformar o modelo de reativo em verdadeiramente preditivo.</div>
-          <div class="attention-ref">→ Exposição via gerência depende da G.7710 — não apenas da G.709</div>
-        </div>
-      </div>
+<!-- ════════════════════════════════════════════
+     SLIDE 13 — ATTENTION (apenas ponto A — métricas)
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// 05 — ponto de atenção</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">13 / 14</span>
+  </div>
+  <div class="slide-body" style="justify-content:center;">
+    <h2>O que merece <em>aprofundamento.</em></h2>
+    <div class="attention-single">
+      <span class="att-badge">C</span>
+      <h3>Contadores PM como features preditivas (G.798 §9)</h3>
+      <p>BIP-8, ES, SES, BBE e UAS registram degradação progressiva nas janelas de 15min e 24h — antes que qualquer defeito dispare. Incluir esses contadores poderia transformar o modelo de reativo em verdadeiramente preditivo.</p>
+      <div class="opp">→ Exposição via gerência depende da G.7710 — não apenas da G.709</div>
     </div>
   </div>
+</div>
 
-  <!-- ══ S14: CONCLUSÃO ══ -->
-  <div class="slide" id="s14">
-    <div class="slide-label">// fim — conclusão</div>
-    <div class="slide-header" style="margin-bottom:20px">
-      <h2 class="slide-title">Síntese<br><em>final.</em></h2>
-    </div>
-    <div class="conclusion-list">
-      <div class="conclusion-item">
-        <div class="conclusion-icon">✓</div>
-        <div class="conclusion-text">O artigo propõe abordagem <strong>prática e viável</strong> para predição de alarmes OTN com deep learning, comparando três arquiteturas de forma sistemática.</div>
-      </div>
-      <div class="conclusion-item">
-        <div class="conclusion-icon">✓</div>
-        <div class="conclusion-text"><strong>LSTM-XGBoost</strong> demonstrou superioridade sobre LSTM e BiLSTM — 94,24% de acurácia e F1=0,91 com dados balanceados por SMOTE.</div>
-      </div>
-      <div class="conclusion-item">
-        <div class="conclusion-icon">✓</div>
-        <div class="conclusion-text">A aplicação de <strong>SMOTE</strong> para classes desbalanceadas em redes ópticas é contribuição metodológica relevante e replicável para outros cenários de telecom.</div>
-      </div>
-      <div class="conclusion-item">
-        <div class="conclusion-icon orange">→</div>
-        <div class="conclusion-text">Trabalhos futuros podem incorporar a <strong>hierarquia causal de defeitos da G.798</strong> e os contadores PM como features — tornando o modelo OTN-aware de verdade.</div>
-      </div>
-      <div class="conclusion-item">
-        <div class="conclusion-icon muted">→</div>
-        <div class="conclusion-text">A publicação da <strong>matriz de confusão por tipo de defeito</strong> fortaleceria significativamente a interpretação operacional dos resultados para engenheiros de rede.</div>
-      </div>
-    </div>
-    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:10px;color:var(--muted);letter-spacing:0.08em">ITU-T G.709 · G.798 · G.7710 · IEEE ICWT 2025 · Rayhan Aziz Budiana et al.</span>
-      <a href="https://esantos-798.github.io" style="font-size:11px;color:var(--accent);text-decoration:none;letter-spacing:0.08em">esantos-798.github.io ↗</a>
-    </div>
+<!-- ════════════════════════════════════════════
+     SLIDE 14 — CONCLUSION
+═════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="brand">// fim — conclusão</span>
+    <span class="tag">OTN + LSTM · IEEE ICWT 2025</span>
+    <span class="slide-num">14 / 14</span>
   </div>
+  <div class="slide-body">
+    <h2>Síntese <em>final.</em></h2>
+    <div class="conclusion-checks">
+      <div class="check-item"><span class="ck">✓</span><p>O artigo propõe abordagem <strong>prática e viável</strong> para predição de alarmes OTN com deep learning, comparando três arquiteturas de forma sistemática.</p></div>
+      <div class="check-item"><span class="ck">✓</span><p><strong>LSTM-XGBoost</strong> demonstrou superioridade sobre LSTM e BiLSTM — 94,24% de acurácia e F1=0,91 com dados balanceados por SMOTE.</p></div>
+      <div class="check-item"><span class="ck">✓</span><p>A aplicação de <strong>SMOTE</strong> para classes desbalanceadas em redes ópticas é contribuição metodológica relevante e replicável para outros cenários de telecom.</p></div>
+    </div>
+    <div class="future-row">
+      <div class="future-item"><p>A publicação da <strong>matriz de confusão por tipo de defeito</strong> fortaleceria significativamente a interpretação operacional dos resultados para engenheiros de rede.</p></div>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:auto;padding-top:16px;">ITU-T G.709 · G.798 · G.7710 · IEEE ICWT 2025 · Rayhan Aziz Budiana et al.</p>
+  </div>
+</div>
 
 </div><!-- /deck -->
-
-<!-- KEYBOARD HINT -->
-<div class="kbd-hint" id="kbdHint">
-  <span class="kbd">←</span> anterior
-  <span style="color:var(--border)">·</span>
-  <span class="kbd">→</span> próximo
-  <span style="color:var(--border)">·</span>
-  <span class="kbd">ESC</span> voltar ao site
-</div>
-
-<script>
-  // ── Cursor ──
-  const cursor = document.getElementById('cursor');
-  const ring   = document.getElementById('cursorRing');
-  let mx=0, my=0, rx=0, ry=0;
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    cursor.style.transform = `translate(${mx-5}px,${my-5}px)`;
-  });
-  (function animRing() {
-    rx += (mx-rx)*0.12; ry += (my-ry)*0.12;
-    ring.style.transform = `translate(${rx-18}px,${ry-18}px)`;
-    requestAnimationFrame(animRing);
-  })();
-
-  // ── Slide engine ──
-  const TOTAL  = 14;
-  let current  = 1;
-  let animating = false;
-
-  function go(dir) {
-    if (animating) return;
-    const next = current + dir;
-    if (next < 1 || next > TOTAL) return;
-    animating = true;
-
-    const prevEl = document.getElementById('s' + current);
-    const nextEl = document.getElementById('s' + next);
-
-    // Posicionar slide de entrada fora da tela
-    nextEl.style.transform = dir > 0 ? 'translateX(40px)' : 'translateX(-40px)';
-    nextEl.style.opacity = '0';
-    nextEl.style.pointerEvents = 'none';
-    nextEl.classList.add('active');
-
-    // Forçar reflow
-    nextEl.getBoundingClientRect();
-
-    // Animar saída do slide atual
-    prevEl.style.transform = dir > 0 ? 'translateX(-40px)' : 'translateX(40px)';
-    prevEl.style.opacity = '0';
-
-    // Animar entrada do novo slide
-    nextEl.style.transform = 'translateX(0)';
-    nextEl.style.opacity = '1';
-
-    setTimeout(() => {
-      prevEl.classList.remove('active');
-      prevEl.style.transform = '';
-      prevEl.style.opacity = '';
-      prevEl.style.pointerEvents = '';
-      nextEl.style.transform = '';
-      nextEl.style.opacity = '';
-      nextEl.style.pointerEvents = '';
-      animating = false;
-    }, 420);
-
-    current = next;
-    updateUI();
-  }
-
-  function updateUI() {
-    document.getElementById('cur').textContent = current;
-    document.getElementById('progress').style.width = ((current / TOTAL) * 100) + '%';
-    document.getElementById('btnPrev').disabled = current === 1;
-    document.getElementById('btnNext').disabled = current === TOTAL;
-    // Hide hint after slide 2
-    document.getElementById('kbdHint').style.opacity = current > 2 ? '0' : '1';
-  }
-
-  // ── Keyboard ──
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === ' ')  { e.preventDefault(); go(1); }
-    if (e.key === 'ArrowLeft')                     { e.preventDefault(); go(-1); }
-    if (e.key === 'Escape') window.location.href = 'https://esantos-798.github.io';
-  });
-
-  // ── Swipe (mobile) ──
-  let tx = 0;
-  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
-  document.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - tx;
-    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
-  });
-
-  updateUI();
-</script>
 </body>
 </html>
